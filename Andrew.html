@@ -1,597 +1,1334 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Resume Formatter — ATS Engine</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resume Formatter — ATS Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Instrument+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
 
-:root{
-  --ink:#111210;
-  --ink2:#3d3d3a;
-  --ink3:#7a7a76;
-  --paper:#f7f6f2;
-  --paper2:#eeecea;
-  --paper3:#e3e1db;
-  --surface:#ffffff;
-  --accent:#1b3d2a;
-  --accent2:#26543a;
-  --accent3:#3a7554;
-  --accent-light:#e6f2ec;
-  --accent-mid:#c0ddc9;
-  --danger:#7d1f1f;
-  --danger-light:#fdf0f0;
-  --danger-border:#e0c0c0;
-  --gold:#a0692a;
-  --gold-light:#fdf5ec;
-  --gold-border:#e8c890;
-  --info-bg:#edf4fb;
-  --info-border:#b8d4ec;
-  --border:rgba(0,0,0,0.08);
-  --border2:rgba(0,0,0,0.14);
-  --border3:rgba(0,0,0,0.22);
-  --radius:6px;
-  --radius-lg:10px;
-  --sidebar-w:272px;
-}
+    :root {
+      --ink: #111210;
+      --ink2: #3d3d3a;
+      --ink3: #7a7a76;
+      --paper: #f7f6f2;
+      --paper2: #eeecea;
+      --paper3: #e3e1db;
+      --surface: #ffffff;
+      --accent: #1b3d2a;
+      --accent2: #26543a;
+      --accent3: #3a7554;
+      --accent-light: #e6f2ec;
+      --accent-mid: #c0ddc9;
+      --danger: #7d1f1f;
+      --danger-light: #fdf0f0;
+      --danger-border: #e0c0c0;
+      --gold: #a0692a;
+      --gold-light: #fdf5ec;
+      --gold-border: #e8c890;
+      --info-bg: #edf4fb;
+      --info-border: #b8d4ec;
+      --border: rgba(0, 0, 0, 0.08);
+      --border2: rgba(0, 0, 0, 0.14);
+      --border3: rgba(0, 0, 0, 0.22);
+      --radius: 6px;
+      --radius-lg: 10px;
+      --sidebar-w: 272px;
+    }
 
-html{font-size:16px;scroll-behavior:smooth}
-body{font-family:'Instrument Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
+    html {
+      font-size: 16px;
+      scroll-behavior: smooth
+    }
 
-/* ── LAYOUT ── */
-.shell{display:grid;grid-template-columns:var(--sidebar-w) 1fr;min-height:100vh}
+    body {
+      font-family: 'Instrument Sans', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased
+    }
 
-/* ── SIDEBAR ── */
-.sidebar{background:#0e1912;padding:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid rgba(255,255,255,0.04)}
-.sidebar-inner{display:flex;flex-direction:column;gap:0;height:100%;padding:1.75rem 1.25rem}
+    /* ── LAYOUT ── */
+    .shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      min-height: 100vh
+    }
 
-.logo{display:flex;align-items:center;gap:11px;text-decoration:none;margin-bottom:2rem}
-.logo-mark{width:34px;height:34px;background:var(--accent3);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.logo-mark svg{width:17px;height:17px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.logo-text-wrap{line-height:1.2}
-.logo-text{font-family:'Fraunces',serif;font-size:15px;font-weight:400;color:#ddeae2;letter-spacing:0.01em;display:block}
-.logo-sub{font-size:10px;color:#456a55;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;display:block;margin-top:1px}
+    /* ── SIDEBAR ── */
+    .sidebar {
+      background: #0e1912;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      border-right: 1px solid rgba(255, 255, 255, 0.04)
+    }
 
-.nav-label{font-size:9.5px;color:#3d6b4f;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px;padding-left:9px}
-.nav-steps{display:flex;flex-direction:column;gap:2px}
-.nav-step{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;transition:background 0.12s,color 0.12s;border:none;background:none;width:100%;text-align:left;color:#6a9a7c;font-size:13px;font-family:'Instrument Sans',sans-serif;font-weight:400}
-.nav-step:hover:not(.active){background:rgba(255,255,255,0.04);color:#9ec4ae}
-.nav-step.active{background:rgba(255,255,255,0.08);color:#ddeae2;font-weight:500}
-.nav-step.done{color:#456a55}
-.step-num{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:10.5px;font-family:'DM Mono',monospace;flex-shrink:0;transition:all 0.2s;color:inherit}
-.nav-step.active .step-num{background:var(--accent3);color:#fff}
-.nav-step.done .step-num{background:#1a3326;color:#456a55;font-size:12px}
-.nav-step.done .step-num::after{content:'✓'}
-.nav-step.done .step-num span{display:none}
+    .sidebar-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      height: 100%;
+      padding: 1.75rem 1.25rem
+    }
 
-.sidebar-footer{margin-top:auto;padding-top:1.25rem;border-top:1px solid rgba(255,255,255,0.05)}
-.sidebar-footer p{font-size:11px;color:#3d6b4f;line-height:1.55}
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      text-decoration: none;
+      margin-bottom: 2rem
+    }
 
-/* ── MAIN ── */
-.main{padding:3rem 4rem 4rem;max-width:860px}
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      background: var(--accent3);
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0
+    }
 
-.page-header{margin-bottom:2.75rem;border-bottom:1px solid var(--border);padding-bottom:1.75rem}
-.page-header h1{font-family:'Fraunces',serif;font-size:2rem;font-weight:300;color:var(--ink);line-height:1.15;margin-bottom:0.4rem;letter-spacing:-0.01em}
-.page-header p{font-size:13.5px;color:var(--ink3)}
+    .logo-mark svg {
+      width: 17px;
+      height: 17px;
+      fill: none;
+      stroke: #fff;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round
+    }
 
-/* ── STEPS ── */
-.step-panel{display:none;animation:fadeUp 0.2s ease}
-.step-panel.active{display:block}
-@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .logo-text-wrap {
+      line-height: 1.2
+    }
 
-.section-eyebrow{font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent3);margin-bottom:0.35rem}
-.section-title{font-family:'Fraunces',serif;font-size:1.25rem;font-weight:300;margin-bottom:0.35rem;color:var(--ink);letter-spacing:-0.005em}
-.section-desc{font-size:13px;color:var(--ink3);margin-bottom:1.75rem;line-height:1.5}
+    .logo-text {
+      font-family: 'Fraunces', serif;
+      font-size: 15px;
+      font-weight: 400;
+      color: #ddeae2;
+      letter-spacing: 0.01em;
+      display: block
+    }
 
-/* ── CARDS ── */
-.card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:1.4rem;margin-bottom:1rem}
-.card-tight{padding:0.9rem 1.2rem}
+    .logo-sub {
+      font-size: 10px;
+      color: #456a55;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      display: block;
+      margin-top: 1px
+    }
 
-/* ── FORM ── */
-label.field-label{display:block;font-size:11.5px;font-weight:500;color:var(--ink2);margin-bottom:6px;letter-spacing:0.04em;text-transform:uppercase}
-input[type=text],input[type=password],textarea,select{width:100%;padding:10px 13px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13.5px;font-family:'Instrument Sans',sans-serif;color:var(--ink);background:var(--surface);outline:none;transition:border-color 0.15s,box-shadow 0.15s}
-input:focus,textarea:focus,select:focus{border-color:var(--accent3);box-shadow:0 0 0 3px rgba(58,117,84,0.12)}
-textarea{resize:vertical;min-height:86px;line-height:1.5}
-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23717171' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
-.field-hint{font-size:11px;color:var(--ink3);margin-top:5px;line-height:1.45}
+    .nav-label {
+      font-size: 9.5px;
+      color: #3d6b4f;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 6px;
+      padding-left: 9px
+    }
 
-.api-row{display:flex;gap:8px;align-items:flex-end}
-.api-row .field{flex:1}
-.toggle-vis{padding:10px 15px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);cursor:pointer;color:var(--ink3);font-size:12.5px;font-family:'Instrument Sans',sans-serif;white-space:nowrap;transition:all 0.15s}
-.toggle-vis:hover{border-color:var(--accent3);color:var(--accent3)}
+    .nav-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 2px
+    }
 
-/* ── FORMAT CARDS ── */
-.format-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:1.5rem}
-.format-card{border:1.5px solid var(--border2);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;cursor:pointer;transition:all 0.15s;background:var(--surface)}
-.format-card:hover{border-color:var(--accent3)}
-.format-card.selected{border-color:var(--accent3);background:var(--accent-light)}
-.format-card input{display:none}
-.format-badge{display:inline-flex;align-items:center;font-size:9.5px;font-family:'DM Mono',monospace;padding:3px 9px;border-radius:20px;margin-bottom:9px;letter-spacing:0.06em;text-transform:uppercase;font-weight:500}
-.badge-andrew{background:#e4f0eb;color:#1a3a2a}
-.badge-jack{background:#ece8f5;color:#3a2a5a}
-.format-card-title{font-weight:500;font-size:13.5px;margin-bottom:3px;color:var(--ink)}
-.format-card-desc{font-size:12px;color:var(--ink3);line-height:1.45}
+    .nav-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      color: #6a9a7c;
+      font-size: 13px;
+      font-family: 'Instrument Sans', sans-serif;
+      font-weight: 400
+    }
 
-/* ── DROP ZONE ── */
-.drop-zone{border:1.5px dashed var(--border3);border-radius:var(--radius-lg);padding:2.25rem 2rem;text-align:center;cursor:pointer;transition:all 0.2s;position:relative;background:var(--surface)}
-.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent3);background:var(--accent-light)}
-.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.drop-icon{font-size:1.8rem;margin-bottom:0.6rem;opacity:0.35}
-.drop-title{font-size:13.5px;font-weight:500;color:var(--ink);margin-bottom:3px}
-.drop-sub{font-size:11.5px;color:var(--ink3)}
-.file-chosen{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--accent-light);border:1px solid var(--accent-mid);border-radius:var(--radius);margin-top:9px}
-.file-chosen svg{width:17px;height:17px;flex-shrink:0;color:var(--accent2)}
-.file-name{font-size:13px;font-weight:500;color:var(--accent)}
-.file-size{font-size:11px;color:var(--ink3)}
-.file-remove{margin-left:auto;background:none;border:none;cursor:pointer;color:var(--ink3);font-size:15px;line-height:1;padding:3px 5px;border-radius:4px;transition:color 0.15s,background 0.15s}
-.file-remove:hover{color:var(--danger);background:var(--danger-light)}
+    .nav-step:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.04);
+      color: #9ec4ae
+    }
 
-/* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:var(--radius);font-size:13.5px;font-weight:500;cursor:pointer;transition:all 0.15s;border:none;font-family:'Instrument Sans',sans-serif;white-space:nowrap;letter-spacing:0.01em}
-.btn-primary{background:var(--accent);color:#fff}
-.btn-primary:hover{background:var(--accent2)}
-.btn-primary:disabled{background:#b0c0b8;cursor:not-allowed}
-.btn-ghost{background:none;border:1px solid var(--border2);color:var(--ink2)}
-.btn-ghost:hover{border-color:var(--accent3);color:var(--accent2)}
-.btn-lg{padding:12px 28px;font-size:14.5px;border-radius:8px}
-.row-btns{display:flex;gap:10px;margin-top:1.75rem}
+    .nav-step.active {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ddeae2;
+      font-weight: 500
+    }
 
-/* ── STATUS BOXES ── */
-.status-box{border-radius:var(--radius-lg);padding:0.9rem 1.1rem;margin-bottom:0.9rem;display:flex;gap:11px;align-items:flex-start}
-.status-box.info{background:var(--info-bg);border:1px solid var(--info-border)}
-.status-box.success{background:var(--accent-light);border:1px solid var(--accent-mid)}
-.status-box.error{background:var(--danger-light);border:1px solid var(--danger-border)}
-.status-box.warning{background:var(--gold-light);border:1px solid var(--gold-border)}
-.status-icon{font-size:16px;flex-shrink:0;margin-top:2px;line-height:1}
-.status-text .status-heading{display:block;font-size:13px;font-weight:600;margin-bottom:2px;color:var(--ink)}
-.status-text p{font-size:12.5px;color:var(--ink2);margin:0;line-height:1.5}
-.status-text p strong{font-weight:600;color:var(--ink)}
+    .nav-step.done {
+      color: #456a55
+    }
 
-/* ── PROGRESS ── */
-.progress-wrap{margin:1.25rem 0}
-.progress-label{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink3);margin-bottom:7px;font-family:'DM Mono',monospace}
-.progress-track{height:3px;background:var(--paper3);border-radius:4px;overflow:hidden}
-.progress-bar{height:100%;background:var(--accent3);border-radius:4px;transition:width 0.4s ease;width:0%}
+    .step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10.5px;
+      font-family: 'DM Mono', monospace;
+      flex-shrink: 0;
+      transition: all 0.2s;
+      color: inherit
+    }
 
-/* ── LOG ── */
-.log-box{background:#0b1410;border-radius:8px;padding:0.85rem 1rem;font-family:'DM Mono',monospace;font-size:11px;color:#4a7a5a;max-height:170px;overflow-y:auto;line-height:1.75;border:1px solid rgba(255,255,255,0.04)}
-.log-ok{color:#5aa870}
-.log-err{color:#d46060}
-.log-info{color:#6080a0}
-.log-warn{color:#b08030}
+    .nav-step.active .step-num {
+      background: var(--accent3);
+      color: #fff
+    }
 
-/* ── DOWNLOAD HERO ── */
-.download-hero{text-align:center;padding:2.25rem 1.75rem}
-.big-check{width:52px;height:52px;background:var(--accent-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.1rem;font-size:22px}
-.download-hero h2{font-family:'Fraunces',serif;font-weight:300;font-size:1.4rem;margin-bottom:0.4rem}
-.download-hero p{font-size:12.5px;color:var(--ink3);margin-bottom:1.5rem}
+    .nav-step.done .step-num {
+      background: #1a3326;
+      color: #456a55;
+      font-size: 12px
+    }
 
-/* ── COLLAPSIBLE ── */
-details{border:1px solid var(--border);border-radius:8px;margin-bottom:1rem;overflow:hidden}
-summary{padding:0.85rem 1.1rem;cursor:pointer;font-size:12.5px;font-weight:500;color:var(--ink2);list-style:none;display:flex;justify-content:space-between;align-items:center;background:var(--surface)}
-summary::-webkit-details-marker{display:none}
-summary::after{content:'▾';font-size:11px;color:var(--ink3)}
-details[open] summary::after{content:'▴'}
-.detail-body{padding:1rem 1.1rem;border-top:1px solid var(--border);background:var(--paper)}
+    .nav-step.done .step-num::after {
+      content: '✓'
+    }
 
-/* ── SUMMARY TABLE ── */
-.summary-row{display:flex;gap:1rem;padding:5px 0;border-bottom:1px solid var(--border)}
-.summary-row:last-child{border-bottom:none}
-.summary-key{min-width:130px;font-size:12.5px;color:var(--ink3);font-weight:500;flex-shrink:0}
-.summary-val{font-size:12.5px;color:var(--ink2)}
+    .nav-step.done .step-num span {
+      display: none
+    }
 
-.divider{border:none;border-top:1px solid var(--border);margin:1.5rem 0}
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05)
+    }
 
-/* ── SPINNER ── */
-@keyframes spin{to{transform:rotate(360deg)}}
-.spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.65s linear infinite;flex-shrink:0}
-.spinner.dark{border-color:rgba(0,0,0,0.12);border-top-color:var(--accent3)}
+    .sidebar-footer p {
+      font-size: 11px;
+      color: #3d6b4f;
+      line-height: 1.55
+    }
 
-/* ── CONSULTANT GRID ── */
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    /* ── MAIN ── */
+    .main {
+      padding: 3rem 4rem 4rem;
+      max-width: 860px
+    }
 
-/* ── RESPONSIVE ── */
-@media(max-width:800px){
-  .shell{grid-template-columns:1fr}
-  .sidebar{position:static;height:auto}
-  .sidebar-inner{flex-direction:column;padding:1rem}
-  .nav-steps{flex-direction:row;flex-wrap:wrap;gap:4px}
-  .main{padding:1.5rem}
-  .format-grid,.two-col{grid-template-columns:1fr}
-}
+    .page-header {
+      margin-bottom: 2.75rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.75rem
+    }
 
-code{background:var(--paper2);padding:1px 6px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11.5px;color:var(--accent2)}
-a{color:var(--accent3);text-decoration:none}
-a:hover{text-decoration:underline}
-</style>
+    .page-header h1 {
+      font-family: 'Fraunces', serif;
+      font-size: 2rem;
+      font-weight: 300;
+      color: var(--ink);
+      line-height: 1.15;
+      margin-bottom: 0.4rem;
+      letter-spacing: -0.01em
+    }
+
+    .page-header p {
+      font-size: 13.5px;
+      color: var(--ink3)
+    }
+
+    /* ── STEPS ── */
+    .step-panel {
+      display: none;
+      animation: fadeUp 0.2s ease
+    }
+
+    .step-panel.active {
+      display: block
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(6px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .section-eyebrow {
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent3);
+      margin-bottom: 0.35rem
+    }
+
+    .section-title {
+      font-family: 'Fraunces', serif;
+      font-size: 1.25rem;
+      font-weight: 300;
+      margin-bottom: 0.35rem;
+      color: var(--ink);
+      letter-spacing: -0.005em
+    }
+
+    .section-desc {
+      font-size: 13px;
+      color: var(--ink3);
+      margin-bottom: 1.75rem;
+      line-height: 1.5
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-lg);
+      padding: 1.4rem;
+      margin-bottom: 1rem
+    }
+
+    .card-tight {
+      padding: 0.9rem 1.2rem
+    }
+
+    /* ── FORM ── */
+    label.field-label {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--ink2);
+      margin-bottom: 6px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase
+    }
+
+    input[type=text],
+    input[type=password],
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px 13px;
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      font-size: 13.5px;
+      font-family: 'Instrument Sans', sans-serif;
+      color: var(--ink);
+      background: var(--surface);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--accent3);
+      box-shadow: 0 0 0 3px rgba(58, 117, 84, 0.12)
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 86px;
+      line-height: 1.5
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23717171' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px
+    }
+
+    .field-hint {
+      font-size: 11px;
+      color: var(--ink3);
+      margin-top: 5px;
+      line-height: 1.45
+    }
+
+    .api-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end
+    }
+
+    .api-row .field {
+      flex: 1
+    }
+
+    .toggle-vis {
+      padding: 10px 15px;
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      color: var(--ink3);
+      font-size: 12.5px;
+      font-family: 'Instrument Sans', sans-serif;
+      white-space: nowrap;
+      transition: all 0.15s
+    }
+
+    .toggle-vis:hover {
+      border-color: var(--accent3);
+      color: var(--accent3)
+    }
+
+    /* ── FORMAT CARDS ── */
+    .format-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 11px;
+      margin-bottom: 1.5rem
+    }
+
+    .format-card {
+      border: 1.5px solid var(--border2);
+      border-radius: var(--radius-lg);
+      padding: 1.1rem 1.25rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: var(--surface)
+    }
+
+    .format-card:hover {
+      border-color: var(--accent3)
+    }
+
+    .format-card.selected {
+      border-color: var(--accent3);
+      background: var(--accent-light)
+    }
+
+    .format-card input {
+      display: none
+    }
+
+    .format-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 9.5px;
+      font-family: 'DM Mono', monospace;
+      padding: 3px 9px;
+      border-radius: 20px;
+      margin-bottom: 9px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 500
+    }
+
+    .badge-andrew {
+      background: #e4f0eb;
+      color: #1a3a2a
+    }
+
+    .badge-jack {
+      background: #ece8f5;
+      color: #3a2a5a
+    }
+
+    .format-card-title {
+      font-weight: 500;
+      font-size: 13.5px;
+      margin-bottom: 3px;
+      color: var(--ink)
+    }
+
+    .format-card-desc {
+      font-size: 12px;
+      color: var(--ink3);
+      line-height: 1.45
+    }
+
+    /* ── DROP ZONE ── */
+    .drop-zone {
+      border: 1.5px dashed var(--border3);
+      border-radius: var(--radius-lg);
+      padding: 2.25rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      background: var(--surface)
+    }
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: var(--accent3);
+      background: var(--accent-light)
+    }
+
+    .drop-zone input[type=file] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%
+    }
+
+    .drop-icon {
+      font-size: 1.8rem;
+      margin-bottom: 0.6rem;
+      opacity: 0.35
+    }
+
+    .drop-title {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--ink);
+      margin-bottom: 3px
+    }
+
+    .drop-sub {
+      font-size: 11.5px;
+      color: var(--ink3)
+    }
+
+    .file-chosen {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--accent-light);
+      border: 1px solid var(--accent-mid);
+      border-radius: var(--radius);
+      margin-top: 9px
+    }
+
+    .file-chosen svg {
+      width: 17px;
+      height: 17px;
+      flex-shrink: 0;
+      color: var(--accent2)
+    }
+
+    .file-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent)
+    }
+
+    .file-size {
+      font-size: 11px;
+      color: var(--ink3)
+    }
+
+    .file-remove {
+      margin-left: auto;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--ink3);
+      font-size: 15px;
+      line-height: 1;
+      padding: 3px 5px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s
+    }
+
+    .file-remove:hover {
+      color: var(--danger);
+      background: var(--danger-light)
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: var(--radius);
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: none;
+      font-family: 'Instrument Sans', sans-serif;
+      white-space: nowrap;
+      letter-spacing: 0.01em
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff
+    }
+
+    .btn-primary:hover {
+      background: var(--accent2)
+    }
+
+    .btn-primary:disabled {
+      background: #b0c0b8;
+      cursor: not-allowed
+    }
+
+    .btn-ghost {
+      background: none;
+      border: 1px solid var(--border2);
+      color: var(--ink2)
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--accent3);
+      color: var(--accent2)
+    }
+
+    .btn-lg {
+      padding: 12px 28px;
+      font-size: 14.5px;
+      border-radius: 8px
+    }
+
+    .row-btns {
+      display: flex;
+      gap: 10px;
+      margin-top: 1.75rem
+    }
+
+    /* ── STATUS BOXES ── */
+    .status-box {
+      border-radius: var(--radius-lg);
+      padding: 0.9rem 1.1rem;
+      margin-bottom: 0.9rem;
+      display: flex;
+      gap: 11px;
+      align-items: flex-start
+    }
+
+    .status-box.info {
+      background: var(--info-bg);
+      border: 1px solid var(--info-border)
+    }
+
+    .status-box.success {
+      background: var(--accent-light);
+      border: 1px solid var(--accent-mid)
+    }
+
+    .status-box.error {
+      background: var(--danger-light);
+      border: 1px solid var(--danger-border)
+    }
+
+    .status-box.warning {
+      background: var(--gold-light);
+      border: 1px solid var(--gold-border)
+    }
+
+    .status-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      line-height: 1
+    }
+
+    .status-text .status-heading {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      color: var(--ink)
+    }
+
+    .status-text p {
+      font-size: 12.5px;
+      color: var(--ink2);
+      margin: 0;
+      line-height: 1.5
+    }
+
+    .status-text p strong {
+      font-weight: 600;
+      color: var(--ink)
+    }
+
+    /* ── PROGRESS ── */
+    .progress-wrap {
+      margin: 1.25rem 0
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+      color: var(--ink3);
+      margin-bottom: 7px;
+      font-family: 'DM Mono', monospace
+    }
+
+    .progress-track {
+      height: 3px;
+      background: var(--paper3);
+      border-radius: 4px;
+      overflow: hidden
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--accent3);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+      width: 0%
+    }
+
+    /* ── LOG ── */
+    .log-box {
+      background: #0b1410;
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: #4a7a5a;
+      max-height: 170px;
+      overflow-y: auto;
+      line-height: 1.75;
+      border: 1px solid rgba(255, 255, 255, 0.04)
+    }
+
+    .log-ok {
+      color: #5aa870
+    }
+
+    .log-err {
+      color: #d46060
+    }
+
+    .log-info {
+      color: #6080a0
+    }
+
+    .log-warn {
+      color: #b08030
+    }
+
+    /* ── DOWNLOAD HERO ── */
+    .download-hero {
+      text-align: center;
+      padding: 2.25rem 1.75rem
+    }
+
+    .big-check {
+      width: 52px;
+      height: 52px;
+      background: var(--accent-light);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.1rem;
+      font-size: 22px
+    }
+
+    .download-hero h2 {
+      font-family: 'Fraunces', serif;
+      font-weight: 300;
+      font-size: 1.4rem;
+      margin-bottom: 0.4rem
+    }
+
+    .download-hero p {
+      font-size: 12.5px;
+      color: var(--ink3);
+      margin-bottom: 1.5rem
+    }
+
+    /* ── COLLAPSIBLE ── */
+    details {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      overflow: hidden
+    }
+
+    summary {
+      padding: 0.85rem 1.1rem;
+      cursor: pointer;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--ink2);
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface)
+    }
+
+    summary::-webkit-details-marker {
+      display: none
+    }
+
+    summary::after {
+      content: '▾';
+      font-size: 11px;
+      color: var(--ink3)
+    }
+
+    details[open] summary::after {
+      content: '▴'
+    }
+
+    .detail-body {
+      padding: 1rem 1.1rem;
+      border-top: 1px solid var(--border);
+      background: var(--paper)
+    }
+
+    /* ── SUMMARY TABLE ── */
+    .summary-row {
+      display: flex;
+      gap: 1rem;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .summary-row:last-child {
+      border-bottom: none
+    }
+
+    .summary-key {
+      min-width: 130px;
+      font-size: 12.5px;
+      color: var(--ink3);
+      font-weight: 500;
+      flex-shrink: 0
+    }
+
+    .summary-val {
+      font-size: 12.5px;
+      color: var(--ink2)
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.5rem 0
+    }
+
+    /* ── SPINNER ── */
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .spinner {
+      width: 15px;
+      height: 15px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      flex-shrink: 0
+    }
+
+    .spinner.dark {
+      border-color: rgba(0, 0, 0, 0.12);
+      border-top-color: var(--accent3)
+    }
+
+    /* ── CONSULTANT GRID ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px
+    }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:800px) {
+      .shell {
+        grid-template-columns: 1fr
+      }
+
+      .sidebar {
+        position: static;
+        height: auto
+      }
+
+      .sidebar-inner {
+        flex-direction: column;
+        padding: 1rem
+      }
+
+      .nav-steps {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 4px
+      }
+
+      .main {
+        padding: 1.5rem
+      }
+
+      .format-grid,
+      .two-col {
+        grid-template-columns: 1fr
+      }
+    }
+
+    code {
+      background: var(--paper2);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11.5px;
+      color: var(--accent2)
+    }
+
+    a {
+      color: var(--accent3);
+      text-decoration: none
+    }
+
+    a:hover {
+      text-decoration: underline
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="shell">
+  <div class="shell">
 
-<!-- SIDEBAR -->
-<aside class="sidebar">
-  <div class="sidebar-inner">
-    <a class="logo" href="#">
-      <div class="logo-mark">
-        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
-      </div>
-      <div class="logo-text-wrap">
-        <span class="logo-text">ResumeFormat</span>
-        <span class="logo-sub">ATS Engine</span>
-      </div>
-    </a>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-inner">
+        <a class="logo" href="#">
+          <div class="logo-mark">
+            <svg viewBox="0 0 24 24">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              <path d="M14 2v6h6" />
+              <path d="M16 13H8" />
+              <path d="M16 17H8" />
+              <path d="M10 9H8" />
+            </svg>
+          </div>
+          <div class="logo-text-wrap">
+            <span class="logo-text">ResumeFormat</span>
+            <span class="logo-sub">ATS Engine</span>
+          </div>
+        </a>
 
-    <div class="nav-label">Workflow</div>
-    <nav class="nav-steps">
-      <button class="nav-step active" data-goto="1"><span class="step-num"><span>1</span></span> API Key</button>
-      <button class="nav-step" data-goto="2"><span class="step-num"><span>2</span></span> Format</button>
-      <button class="nav-step" data-goto="3"><span class="step-num"><span>3</span></span> Upload</button>
-      <button class="nav-step" data-goto="4"><span class="step-num"><span>4</span></span> Options</button>
-      <button class="nav-step" data-goto="5"><span class="step-num"><span>5</span></span> Generate</button>
-    </nav>
+        <div class="nav-label">Workflow</div>
+        <nav class="nav-steps">
+          <button class="nav-step active" data-goto="1"><span class="step-num"><span>1</span></span> API Key</button>
+          <button class="nav-step" data-goto="2"><span class="step-num"><span>2</span></span> Format</button>
+          <button class="nav-step" data-goto="3"><span class="step-num"><span>3</span></span> Upload</button>
+          <button class="nav-step" data-goto="4"><span class="step-num"><span>4</span></span> Options</button>
+          <button class="nav-step" data-goto="5"><span class="step-num"><span>5</span></span> Generate</button>
+        </nav>
 
-    <div class="sidebar-footer">
-      <p>Your API key is stored only in memory for this session and is never sent to any server except Anthropic.</p>
-    </div>
-  </div>
-</aside>
-
-<!-- MAIN -->
-<main class="main">
-  <div class="page-header">
-    <h1>Resume Formatter</h1>
-    <p>Multi-format ATS resume generation powered by Claude AI</p>
-  </div>
-
-  <!-- STEP 1: API KEY -->
-  <div class="step-panel active" id="panel-1">
-    <div class="section-eyebrow">Step 1 of 5</div>
-    <div class="section-title">Anthropic API Key</div>
-    <div class="section-desc">Your key is used directly from your browser to call the Claude API — it is never stored or sent anywhere except Anthropic.</div>
-
-    <div class="card">
-      <label class="field-label" for="api-key">API Key</label>
-      <div class="api-row">
-        <div class="field">
-          <input type="password" id="api-key" placeholder="sk-ant-api03-…" autocomplete="off"/>
+        <div class="sidebar-footer">
+          <p>Your API key is stored only in memory for this session and is never sent to any server except Anthropic.
+          </p>
         </div>
       </div>
-      <p class="field-hint">Get your key at <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com/keys</a></p>
-    </div>
+    </aside>
 
-    <div class="status-box info">
-      <span class="status-icon">🖥</span>
-      <div class="status-text">
-        <span class="status-heading">How to run</span>
-        <p>Open a terminal in this folder and run <code>node server.js</code>, then open <a href="http://localhost:3000" target="_blank">http://localhost:3000</a>. The server acts as a local proxy to work around browser CORS restrictions — your key never touches it.</p>
+    <!-- MAIN -->
+    <main class="main">
+      <div class="page-header">
+        <h1>Resume Formatter</h1>
+        <p>Multi-format ATS resume generation powered by Claude AI</p>
       </div>
-    </div>
-    <div class="status-box success">
-      <span class="status-icon">🔒</span>
-      <div class="status-text">
-        <span class="status-heading">Privacy</span>
-        <p>Your API key is stored only in memory for this session and goes directly to Anthropic. Refreshing the page clears it.</p>
-      </div>
-    </div>
 
-    <div class="row-btns">
-      <button class="btn btn-primary" onclick="goStep(2)">Continue →</button>
-    </div>
-  </div>
+      <!-- STEP 1: API KEY -->
+      <div class="step-panel active" id="panel-1">
+        <div class="section-eyebrow">Step 1 of 5</div>
+        <div class="section-title">Anthropic API Key</div>
+        <div class="section-desc">Your key is used directly from your browser to call the Claude API — it is never
+          stored or sent anywhere except Anthropic.</div>
 
-  <!-- STEP 2: FORMAT -->
-  <div class="step-panel" id="panel-2">
-    <div class="section-eyebrow">Step 2 of 5</div>
-    <div class="section-title">Choose Format</div>
-    <div class="section-desc">Select the resume template style for the output document.</div>
-
-    <div class="format-grid">
-      <label class="format-card selected" id="fc-andrew">
-        <input type="radio" name="format" value="andrew" checked/>
-        <div class="format-badge badge-andrew">AW Format</div>
-        <div class="format-card-title">Andrew Welsh</div>
-        <div class="format-card-desc">Mid-to-senior roles. Right-aligned date columns, grey shaded section headers, consultant contact block.</div>
-      </label>
-      <label class="format-card" id="fc-jack">
-        <input type="radio" name="format" value="jack"/>
-        <div class="format-badge badge-jack">JK Format</div>
-        <div class="format-card-title">Jack Format</div>
-        <div class="format-card-desc">Comprehensive bullet coverage. Centred headers, column layout, professional summary, full CV header.</div>
-      </label>
-    </div>
-
-    <details>
-      <summary>Format configuration details</summary>
-      <div class="detail-body" id="format-details-body">Loading…</div>
-    </details>
-
-    <div class="row-btns">
-      <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
-      <button class="btn btn-primary" onclick="goStep(3)">Continue →</button>
-    </div>
-  </div>
-
-  <!-- STEP 3: UPLOAD -->
-  <div class="step-panel" id="panel-3">
-    <div class="section-eyebrow">Step 3 of 5</div>
-    <div class="section-title">Upload Files</div>
-    <div class="section-desc">Upload the raw resume to reformat and the DOCX template to apply.</div>
-
-    <div style="margin-bottom:1.25rem">
-      <label class="field-label">Resume File <span style="color:var(--ink3);font-weight:400;text-transform:none;font-size:11px">(DOCX, PDF or TXT)</span></label>
-      <div class="drop-zone" id="drop-resume" ondragover="dragOver(event,'drop-resume')" ondragleave="dragLeave('drop-resume')" ondrop="dropFile(event,'resume')">
-        <input type="file" id="file-resume" accept=".docx,.txt,.pdf" onchange="fileChosen('resume',this)"/>
-        <div class="drop-icon">📄</div>
-        <div class="drop-title">Drop resume here or click to browse</div>
-        <div class="drop-sub">Supports .docx, .pdf and .txt</div>
-      </div>
-      <div id="chosen-resume" style="display:none"></div>
-    </div>
-
-    <div>
-      <label class="field-label">Template DOCX <span style="color:var(--ink3);font-weight:400;text-transform:none;font-size:11px">(the format template)</span></label>
-      <div class="drop-zone" id="drop-template" ondragover="dragOver(event,'drop-template')" ondragleave="dragLeave('drop-template')" ondrop="dropFile(event,'template')">
-        <input type="file" id="file-template" accept=".docx" onchange="fileChosen('template',this)"/>
-        <div class="drop-icon">📋</div>
-        <div class="drop-title">Drop template here or click to browse</div>
-        <div class="drop-sub">Supports .docx only</div>
-      </div>
-      <div id="chosen-template" style="display:none"></div>
-    </div>
-
-    <div class="row-btns">
-      <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
-      <button class="btn btn-primary" onclick="goStep(4)">Continue →</button>
-    </div>
-  </div>
-
-  <!-- STEP 4: OPTIONS -->
-  <div class="step-panel" id="panel-4">
-    <div class="section-eyebrow">Step 4 of 5</div>
-    <div class="section-title">Options</div>
-    <div class="section-desc">Set output filename and any client-specific requirements.</div>
-
-    <div class="card" style="margin-bottom:1.1rem">
-      <label class="field-label" for="output-name">Output File Name</label>
-      <input type="text" id="output-name" placeholder="e.g. John_Smith_Formatted" value="Formatted_Resume"/>
-      <p class="field-hint">The .docx extension will be added automatically.</p>
-    </div>
-
-    <div class="card" style="margin-bottom:1.1rem">
-      <label class="field-label" for="client-notes">Client Notes <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--ink3)">(optional)</span></label>
-      <textarea id="client-notes" placeholder="e.g. Emphasise Big 4 audit experience. Highlight IFRS expertise. Target: Senior Audit Manager role at Deloitte."></textarea>
-      <p class="field-hint">Guides Claude to surface the most relevant experience. Nothing is invented — only existing content is reordered and surfaced.</p>
-    </div>
-
-    <div id="andrew-consultant-block" style="display:none">
-      <div class="card">
-        <div style="font-size:12.5px;font-weight:600;margin-bottom:0.9rem;color:var(--ink2)">Consultant Details <span style="font-weight:400;color:var(--ink3)">(Andrew Welsh Format)</span></div>
-        <div class="two-col">
-          <div>
-            <label class="field-label" for="consultant-name">Consultant Name</label>
-            <input type="text" id="consultant-name" placeholder="Full name"/>
+        <div class="card">
+          <label class="field-label" for="api-key">API Key</label>
+          <div class="api-row">
+            <div class="field">
+              <input type="password" id="api-key" placeholder="sk-ant-api03-…" autocomplete="off" />
+            </div>
           </div>
-          <div>
-            <label class="field-label" for="consultant-tel">Consultant Tel</label>
-            <input type="text" id="consultant-tel" placeholder="+44 7700 000000"/>
+          <p class="field-hint">Get your key at <a href="https://console.anthropic.com/keys"
+              target="_blank">console.anthropic.com/keys</a></p>
+        </div>
+
+        <div class="status-box info">
+          <span class="status-icon">🖥</span>
+          <div class="status-text">
+            <span class="status-heading">How to run</span>
+            <p>Open a terminal in this folder and run <code>node server.js</code>, then open <a
+                href="http://localhost:3000" target="_blank">http://localhost:3000</a>. The server acts as a local proxy
+              to work around browser CORS restrictions — your key never touches it.</p>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div class="row-btns">
-      <button class="btn btn-ghost" onclick="goStep(3)">← Back</button>
-      <button class="btn btn-primary" onclick="goStep(5)">Continue →</button>
-    </div>
-  </div>
-
-  <!-- STEP 5: GENERATE -->
-  <div class="step-panel" id="panel-5">
-    <div class="section-eyebrow">Step 5 of 5</div>
-    <div class="section-title">Generate</div>
-    <div class="section-desc">Review your configuration, then run the formatter.</div>
-
-    <div class="card card-tight" style="margin-bottom:1.25rem" id="summary-card">
-      <div id="summary-body"></div>
-    </div>
-
-    <div id="run-section">
-      <button class="btn btn-primary btn-lg" id="run-btn" onclick="runFormatter()">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
-        Run Formatter
-      </button>
-    </div>
-
-    <div id="progress-section" style="display:none;margin-top:1.5rem">
-      <div class="progress-wrap">
-        <div class="progress-label">
-          <span id="progress-label-text">Initialising…</span>
-          <span id="progress-pct">0%</span>
+        <div class="status-box success">
+          <span class="status-icon">🔒</span>
+          <div class="status-text">
+            <span class="status-heading">Privacy</span>
+            <p>Your API key is stored only in memory for this session and goes directly to Anthropic. Refreshing the
+              page clears it.</p>
+          </div>
         </div>
-        <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
-      </div>
-      <div class="log-box" id="log-box"></div>
-    </div>
 
-    <div id="result-section" style="display:none;margin-top:1.5rem">
-      <div class="card download-hero">
-        <div class="big-check">✅</div>
-        <h2>Resume formatted</h2>
-        <p>Your document has been generated and is ready to download.</p>
-        <button class="btn btn-primary btn-lg" id="download-btn" onclick="downloadResult()">↓ Download DOCX</button>
+        <div class="row-btns">
+          <button class="btn btn-primary" onclick="goStep(2)">Continue →</button>
+        </div>
       </div>
-      <div class="row-btns" style="justify-content:center;margin-top:1rem">
-        <button class="btn btn-ghost" onclick="resetAll()">Format another resume</button>
+
+      <!-- STEP 2: FORMAT -->
+      <div class="step-panel" id="panel-2">
+        <div class="section-eyebrow">Step 2 of 5</div>
+        <div class="section-title">Choose Format</div>
+        <div class="section-desc">Select the resume template style for the output document.</div>
+
+        <div class="format-grid">
+          <label class="format-card selected" id="fc-andrew">
+            <input type="radio" name="format" value="andrew" checked />
+            <div class="format-badge badge-andrew">AW Format</div>
+            <div class="format-card-title">Andrew Welsh</div>
+            <div class="format-card-desc">Mid-to-senior roles. Right-aligned date columns, grey shaded section headers,
+              consultant contact block.</div>
+          </label>
+          <label class="format-card" id="fc-jack">
+            <input type="radio" name="format" value="jack" />
+            <div class="format-badge badge-jack">JK Format</div>
+            <div class="format-card-title">Jack Format</div>
+            <div class="format-card-desc">Comprehensive bullet coverage. Centred headers, column layout, professional
+              summary, full CV header.</div>
+          </label>
+        </div>
+
+        <details>
+          <summary>Format configuration details</summary>
+          <div class="detail-body" id="format-details-body">Loading…</div>
+        </details>
+
+        <div class="row-btns">
+          <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+          <button class="btn btn-primary" onclick="goStep(3)">Continue →</button>
+        </div>
       </div>
-    </div>
 
-    <div id="error-section" style="display:none;margin-top:1.5rem"></div>
+      <!-- STEP 3: UPLOAD -->
+      <div class="step-panel" id="panel-3">
+        <div class="section-eyebrow">Step 3 of 5</div>
+        <div class="section-title">Upload Files</div>
+        <div class="section-desc">Upload the raw resume to reformat and the DOCX template to apply.</div>
 
-    <div class="row-btns" id="back-btns">
-      <button class="btn btn-ghost" onclick="goStep(4)">← Back</button>
-    </div>
+        <div style="margin-bottom:1.25rem">
+          <label class="field-label">Resume File <span
+              style="color:var(--ink3);font-weight:400;text-transform:none;font-size:11px">(DOCX, PDF or
+              TXT)</span></label>
+          <div class="drop-zone" id="drop-resume" ondragover="dragOver(event,'drop-resume')"
+            ondragleave="dragLeave('drop-resume')" ondrop="dropFile(event,'resume')">
+            <input type="file" id="file-resume" accept=".docx,.txt,.pdf" onchange="fileChosen('resume',this)" />
+            <div class="drop-icon">📄</div>
+            <div class="drop-title">Drop resume here or click to browse</div>
+            <div class="drop-sub">Supports .docx, .pdf and .txt</div>
+          </div>
+          <div id="chosen-resume" style="display:none"></div>
+        </div>
+
+        <div>
+          <label class="field-label">Template DOCX <span
+              style="color:var(--ink3);font-weight:400;text-transform:none;font-size:11px">(the format
+              template)</span></label>
+          <div class="drop-zone" id="drop-template" ondragover="dragOver(event,'drop-template')"
+            ondragleave="dragLeave('drop-template')" ondrop="dropFile(event,'template')">
+            <input type="file" id="file-template" accept=".docx" onchange="fileChosen('template',this)" />
+            <div class="drop-icon">📋</div>
+            <div class="drop-title">Drop template here or click to browse</div>
+            <div class="drop-sub">Supports .docx only</div>
+          </div>
+          <div id="chosen-template" style="display:none"></div>
+        </div>
+
+        <div class="row-btns">
+          <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+          <button class="btn btn-primary" onclick="goStep(4)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: OPTIONS -->
+      <div class="step-panel" id="panel-4">
+        <div class="section-eyebrow">Step 4 of 5</div>
+        <div class="section-title">Options</div>
+        <div class="section-desc">Set output filename and any client-specific requirements.</div>
+
+        <div class="card" style="margin-bottom:1.1rem">
+          <label class="field-label" for="output-name">Output File Name</label>
+          <input type="text" id="output-name" placeholder="e.g. John_Smith_Formatted" value="Formatted_Resume" />
+          <p class="field-hint">The .docx extension will be added automatically.</p>
+        </div>
+
+        <div class="card" style="margin-bottom:1.1rem">
+          <label class="field-label" for="client-notes">Client Notes <span
+              style="font-weight:400;text-transform:none;font-size:11px;color:var(--ink3)">(optional)</span></label>
+          <textarea id="client-notes"
+            placeholder="e.g. Emphasise Big 4 audit experience. Highlight IFRS expertise. Target: Senior Audit Manager role at Deloitte."></textarea>
+          <p class="field-hint">Guides Claude to surface the most relevant experience. Nothing is invented — only
+            existing content is reordered and surfaced.</p>
+        </div>
+
+        <div id="andrew-consultant-block" style="display:none">
+          <div class="card">
+            <div style="font-size:12.5px;font-weight:600;margin-bottom:0.9rem;color:var(--ink2)">Consultant Details
+              <span style="font-weight:400;color:var(--ink3)">(Andrew Welsh Format)</span></div>
+            <div class="two-col">
+              <div>
+                <label class="field-label" for="consultant-name">Consultant Name</label>
+                <input type="text" id="consultant-name" placeholder="Full name" />
+              </div>
+              <div>
+                <label class="field-label" for="consultant-tel">Consultant Tel</label>
+                <input type="text" id="consultant-tel" placeholder="+44 7700 000000" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row-btns">
+          <button class="btn btn-ghost" onclick="goStep(3)">← Back</button>
+          <button class="btn btn-primary" onclick="goStep(5)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- STEP 5: GENERATE -->
+      <div class="step-panel" id="panel-5">
+        <div class="section-eyebrow">Step 5 of 5</div>
+        <div class="section-title">Generate</div>
+        <div class="section-desc">Review your configuration, then run the formatter.</div>
+
+        <div class="card card-tight" style="margin-bottom:1.25rem" id="summary-card">
+          <div id="summary-body"></div>
+        </div>
+
+        <div id="run-section">
+          <button class="btn btn-primary btn-lg" id="run-btn" onclick="runFormatter()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M5 3l14 9-14 9V3z" />
+            </svg>
+            Run Formatter
+          </button>
+        </div>
+
+        <div id="progress-section" style="display:none;margin-top:1.5rem">
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span id="progress-label-text">Initialising…</span>
+              <span id="progress-pct">0%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-bar" id="progress-bar"></div>
+            </div>
+          </div>
+          <div class="log-box" id="log-box"></div>
+        </div>
+
+        <div id="result-section" style="display:none;margin-top:1.5rem">
+          <div class="card download-hero">
+            <div class="big-check">✅</div>
+            <h2>Resume formatted</h2>
+            <p>Your document has been generated and is ready to download.</p>
+            <button class="btn btn-primary btn-lg" id="download-btn" onclick="downloadResult()">↓ Download DOCX</button>
+          </div>
+          <div class="row-btns" style="justify-content:center;margin-top:1rem">
+            <button class="btn btn-ghost" onclick="resetAll()">Format another resume</button>
+          </div>
+        </div>
+
+        <div id="error-section" style="display:none;margin-top:1.5rem"></div>
+
+        <div class="row-btns" id="back-btns">
+          <button class="btn btn-ghost" onclick="goStep(4)">← Back</button>
+        </div>
+      </div>
+
+    </main>
   </div>
 
-</main>
-</div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script>
+    // ─── STATE ────────────────────────────────────────────────────────────────────
+    const DEFAULT_API_KEY = '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';
 
-<script>
-// ─── STATE ────────────────────────────────────────────────────────────────────
-const DEFAULT_API_KEY = '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';
+    const state = {
+      currentStep: 1,
+      apiKey: DEFAULT_API_KEY,
+      format: 'andrew',
+      resumeFile: null,
+      templateFile: null,
+      outputBlob: null,
+      outputName: 'Formatted_Resume'
+    };
 
-const state = {
-  currentStep : 1,
-  apiKey      : DEFAULT_API_KEY,
-  format      : 'andrew',
-  resumeFile  : null,
-  templateFile: null,
-  outputBlob  : null,
-  outputName  : 'Formatted_Resume'
-};
+    // ─── FORMAT CONFIG ────────────────────────────────────────────────────────────
+    const FORMATS = {
+      andrew: {
+        name: 'andrew', label: 'Andrew Welsh Format',
+        show_right_to_work: true, show_notice: true, show_languages: true,
+        show_candidate_profile: true, show_consultant: true, show_skills: true,
+        section_header_style: 'Normal3', personal_row_style: 'Normal5', personal_row_style_2: 'Normal7',
+        work_bullet_numid: 'TEXT', edu_bullet_numid: 'TEXT', edu_bullet_ilvl: '0',
+        bullet_style: 'Achievement',
+        section_personal: 'PERSONAL DETAILS', section_education: 'EDUCATION',
+        section_work: 'WORK EXPERIENCE', section_profile: 'Candidate profile',
+        section_consultant: 'Consultant contact details', section_skills: 'OTHER INFORMATION',
+        ai_extra_instructions: 'Tailor tone towards mid-to-senior roles.',
+        use_theme_font: true, use_andrew_tabs: true, header_fill: 'D9D9D9',
+        font_name: 'Arial Narrow', font_size: '22',
+        use_jack_work_style: false, header_alignment: 'both', use_grey_header_shading: true,
+        show_cv_header: false, show_nationality: false, show_marital_status: false,
+        dynamic_section_order: false, use_left_aligned_labels: false, header_underlined: false,
+        line_spacing: '276', use_column_layout: false
+      },
+      jack: {
+        name: 'jack', label: 'Jack Format',
+        show_right_to_work: false, show_notice: false, show_languages: false,
+        show_candidate_profile: true, show_consultant: false, show_skills: true,
+        section_header_style: 'Normal21', personal_row_style: 'Normal5', personal_row_style_2: 'Normal7',
+        work_bullet_numid: 'TEXT', edu_bullet_numid: 'TEXT', edu_bullet_ilvl: '0',
+        bullet_style: 'ListParagraph',
+        section_personal: 'CURRICULUM VITAE', section_education: 'EDUCATION & CERTIFICATIONS',
+        section_work: 'PROFESSIONAL EXPERIENCE', section_profile: 'PROFESSIONAL SUMMARY',
+        section_consultant: '', section_skills: 'OTHER INFORMATION',
+        ai_extra_instructions: 'Provide comprehensive bullet coverage.',
+        use_theme_font: false, use_andrew_tabs: false, header_fill: 'F3F3F3',
+        font_name: 'Arial Narrow', font_size: '24',
+        use_jack_work_style: true, header_alignment: 'center', use_grey_header_shading: false,
+        show_cv_header: true, show_nationality: false, show_marital_status: false,
+        dynamic_section_order: false, use_left_aligned_labels: true, header_underlined: true,
+        line_spacing: '276', use_column_layout: true
+      }
+    };
 
-// ─── FORMAT CONFIG ────────────────────────────────────────────────────────────
-const FORMATS = {
-  andrew: {
-    name:'andrew', label:'Andrew Welsh Format',
-    show_right_to_work:true, show_notice:true, show_languages:true,
-    show_candidate_profile:true, show_consultant:true, show_skills:true,
-    section_header_style:'Normal3', personal_row_style:'Normal5', personal_row_style_2:'Normal7',
-    work_bullet_numid:'TEXT', edu_bullet_numid:'TEXT', edu_bullet_ilvl:'0',
-    bullet_style:'Achievement',
-    section_personal:'PERSONAL DETAILS', section_education:'EDUCATION',
-    section_work:'WORK EXPERIENCE', section_profile:'Candidate profile',
-    section_consultant:'Consultant contact details', section_skills:'OTHER INFORMATION',
-    ai_extra_instructions:'Tailor tone towards mid-to-senior roles.',
-    use_theme_font:true, use_andrew_tabs:true, header_fill:'D9D9D9',
-    font_name:'Arial Narrow', font_size:'22',
-    use_jack_work_style:false, header_alignment:'both', use_grey_header_shading:true,
-    show_cv_header:false, show_nationality:false, show_marital_status:false,
-    dynamic_section_order:false, use_left_aligned_labels:false, header_underlined:false,
-    line_spacing:'276', use_column_layout:false
-  },
-  jack: {
-    name:'jack', label:'Jack Format',
-    show_right_to_work:false, show_notice:false, show_languages:false,
-    show_candidate_profile:true, show_consultant:false, show_skills:true,
-    section_header_style:'Normal21', personal_row_style:'Normal5', personal_row_style_2:'Normal7',
-    work_bullet_numid:'TEXT', edu_bullet_numid:'TEXT', edu_bullet_ilvl:'0',
-    bullet_style:'ListParagraph',
-    section_personal:'CURRICULUM VITAE', section_education:'EDUCATION & CERTIFICATIONS',
-    section_work:'PROFESSIONAL EXPERIENCE', section_profile:'PROFESSIONAL SUMMARY',
-    section_consultant:'', section_skills:'OTHER INFORMATION',
-    ai_extra_instructions:'Provide comprehensive bullet coverage.',
-    use_theme_font:false, use_andrew_tabs:false, header_fill:'F3F3F3',
-    font_name:'Arial Narrow', font_size:'24',
-    use_jack_work_style:true, header_alignment:'center', use_grey_header_shading:false,
-    show_cv_header:true, show_nationality:false, show_marital_status:false,
-    dynamic_section_order:false, use_left_aligned_labels:true, header_underlined:true,
-    line_spacing:'276', use_column_layout:true
-  }
-};
+    const defaultApiKeyInput = document.getElementById('api-key');
+    if (defaultApiKeyInput && DEFAULT_API_KEY) {
+      defaultApiKeyInput.value = DEFAULT_API_KEY;
+    }
 
-const defaultApiKeyInput = document.getElementById('api-key');
-if (defaultApiKeyInput && DEFAULT_API_KEY) {
-  defaultApiKeyInput.value = DEFAULT_API_KEY;
-}
+    // ─── NAVIGATION ───────────────────────────────────────────────────────────────
+    function goStep(n) {
+      if (n === 2 && !document.getElementById('api-key').value.trim()) {
+        alert('Please enter your Anthropic API key first.'); return;
+      }
+      if (n === 4) {
+        const fmt = document.querySelector('input[name="format"]:checked')?.value;
+        document.getElementById('andrew-consultant-block').style.display =
+          fmt === 'andrew' ? 'block' : 'none';
+      }
+      if (n === 5) { buildSummary(); }
 
-// ─── NAVIGATION ───────────────────────────────────────────────────────────────
-function goStep(n) {
-  if (n === 2 && !document.getElementById('api-key').value.trim()) {
-    alert('Please enter your Anthropic API key first.'); return;
-  }
-  if (n === 4) {
-    const fmt = document.querySelector('input[name="format"]:checked')?.value;
-    document.getElementById('andrew-consultant-block').style.display =
-      fmt === 'andrew' ? 'block' : 'none';
-  }
-  if (n === 5) { buildSummary(); }
+      document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + n).classList.add('active');
 
-  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('panel-' + n).classList.add('active');
+      document.querySelectorAll('.nav-step').forEach((el, i) => {
+        const sn = i + 1;
+        el.classList.remove('active', 'done');
+        if (sn === n) el.classList.add('active');
+        else if (sn < n) el.classList.add('done');
+      });
 
-  document.querySelectorAll('.nav-step').forEach((el, i) => {
-    const sn = i + 1;
-    el.classList.remove('active','done');
-    if (sn === n) el.classList.add('active');
-    else if (sn < n) el.classList.add('done');
-  });
+      state.currentStep = n;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
-  state.currentStep = n;
-  window.scrollTo({ top:0, behavior:'smooth' });
-}
+    // ─── API KEY VISIBILITY ───────────────────────────────────────────────────────
+    function toggleApiVis() {
+      const inp = document.getElementById('api-key');
+      const btn = document.querySelector('.toggle-vis');
+      if (inp.type === 'password') { inp.type = 'text'; btn.textContent = 'Hide'; }
+      else { inp.type = 'password'; btn.textContent = 'Show'; }
+    }
 
-// ─── API KEY VISIBILITY ───────────────────────────────────────────────────────
-function toggleApiVis() {
-  const inp = document.getElementById('api-key');
-  const btn = document.querySelector('.toggle-vis');
-  if (inp.type === 'password') { inp.type = 'text';     btn.textContent = 'Hide'; }
-  else                         { inp.type = 'password'; btn.textContent = 'Show'; }
-}
+    // ─── FORMAT SELECTION ─────────────────────────────────────────────────────────
+    document.querySelectorAll('input[name="format"]').forEach(r => {
+      r.addEventListener('change', function () {
+        document.querySelectorAll('.format-card').forEach(c => c.classList.remove('selected'));
+        this.closest('.format-card').classList.add('selected');
+        updateFormatDetails(this.value);
+      });
+    });
 
-// ─── FORMAT SELECTION ─────────────────────────────────────────────────────────
-document.querySelectorAll('input[name="format"]').forEach(r => {
-  r.addEventListener('change', function() {
-    document.querySelectorAll('.format-card').forEach(c => c.classList.remove('selected'));
-    this.closest('.format-card').classList.add('selected');
-    updateFormatDetails(this.value);
-  });
-});
+    function updateFormatDetails(fmt) {
+      const f = FORMATS[fmt];
+      const body = document.getElementById('format-details-body');
+      const rows = [
+        ['Sections visible', [f.show_candidate_profile && 'Profile', f.show_right_to_work && 'Right to Work', f.show_notice && 'Notice', f.show_languages && 'Languages', f.show_consultant && 'Consultant', f.show_skills && 'Skills'].filter(Boolean).join(', ')],
+        ['Header alignment', f.header_alignment],
+        ['CV header shown', f.show_cv_header ? 'Yes' : 'No'],
+        ['Column layout', f.use_column_layout ? 'Yes' : 'No'],
+        ['Header underlined', f.header_underlined ? 'Yes' : 'No'],
+        ['Grey header shading', f.use_grey_header_shading ? 'Yes' : 'No'],
+        ['AI instructions', f.ai_extra_instructions || '—'],
+      ];
+      body.innerHTML = `<table style="width:100%;font-size:12px;border-collapse:collapse">${rows.map(([k, v]) =>
+        `<tr><td style="padding:5px 0;color:var(--ink3);width:48%;font-weight:500">${k}</td><td style="padding:5px 0;color:var(--ink2)">${v}</td></tr>`
+      ).join('')
+        }</table>`;
+    }
+    updateFormatDetails('andrew');
 
-function updateFormatDetails(fmt) {
-  const f = FORMATS[fmt];
-  const body = document.getElementById('format-details-body');
-  const rows = [
-    ['Sections visible',    [f.show_candidate_profile&&'Profile', f.show_right_to_work&&'Right to Work', f.show_notice&&'Notice', f.show_languages&&'Languages', f.show_consultant&&'Consultant', f.show_skills&&'Skills'].filter(Boolean).join(', ')],
-    ['Header alignment',    f.header_alignment],
-    ['CV header shown',     f.show_cv_header    ? 'Yes' : 'No'],
-    ['Column layout',       f.use_column_layout ? 'Yes' : 'No'],
-    ['Header underlined',   f.header_underlined ? 'Yes' : 'No'],
-    ['Grey header shading', f.use_grey_header_shading ? 'Yes' : 'No'],
-    ['AI instructions',     f.ai_extra_instructions || '—'],
-  ];
-  body.innerHTML = `<table style="width:100%;font-size:12px;border-collapse:collapse">${
-    rows.map(([k,v]) =>
-      `<tr><td style="padding:5px 0;color:var(--ink3);width:48%;font-weight:500">${k}</td><td style="padding:5px 0;color:var(--ink2)">${v}</td></tr>`
-    ).join('')
-  }</table>`;
-}
-updateFormatDetails('andrew');
+    // ─── FILE HANDLING ────────────────────────────────────────────────────────────
+    function dragOver(e, id) { e.preventDefault(); document.getElementById(id).classList.add('drag-over'); }
+    function dragLeave(id) { document.getElementById(id).classList.remove('drag-over'); }
+    function dropFile(e, type) {
+      e.preventDefault();
+      const id = type === 'resume' ? 'drop-resume' : 'drop-template';
+      document.getElementById(id).classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) processFile(type, file);
+    }
+    function fileChosen(type, input) { if (input.files[0]) processFile(type, input.files[0]); }
 
-// ─── FILE HANDLING ────────────────────────────────────────────────────────────
-function dragOver(e, id)   { e.preventDefault(); document.getElementById(id).classList.add('drag-over'); }
-function dragLeave(id)     { document.getElementById(id).classList.remove('drag-over'); }
-function dropFile(e, type) {
-  e.preventDefault();
-  const id = type==='resume' ? 'drop-resume' : 'drop-template';
-  document.getElementById(id).classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) processFile(type, file);
-}
-function fileChosen(type, input) { if (input.files[0]) processFile(type, input.files[0]); }
+    function processFile(type, file) {
+      const ext = '.' + file.name.split('.').pop().toLowerCase();
+      if (type === 'resume' && !['.docx', '.txt', '.pdf'].includes(ext)) { alert('Please upload a .docx, .pdf or .txt file.'); return; }
+      if (type === 'template' && ext !== '.docx') { alert('Template must be a .docx file.'); return; }
 
-function processFile(type, file) {
-  const ext = '.' + file.name.split('.').pop().toLowerCase();
-  if (type==='resume'   && !['.docx','.txt','.pdf'].includes(ext)) { alert('Please upload a .docx, .pdf or .txt file.'); return; }
-  if (type==='template' && ext!=='.docx')                          { alert('Template must be a .docx file.'); return; }
+      if (type === 'resume') state.resumeFile = file;
+      else state.templateFile = file;
 
-  if (type==='resume') state.resumeFile   = file;
-  else                 state.templateFile = file;
+      const chosenId = type === 'resume' ? 'chosen-resume' : 'chosen-template';
+      const dropId = type === 'resume' ? 'drop-resume' : 'drop-template';
+      const sizeStr = file.size < 1024 * 1024
+        ? (file.size / 1024).toFixed(1) + ' KB'
+        : (file.size / 1024 / 1024).toFixed(1) + ' MB';
 
-  const chosenId = type==='resume' ? 'chosen-resume'   : 'chosen-template';
-  const dropId   = type==='resume' ? 'drop-resume'     : 'drop-template';
-  const sizeStr  = file.size < 1024*1024
-    ? (file.size/1024).toFixed(1) + ' KB'
-    : (file.size/1024/1024).toFixed(1) + ' MB';
-
-  document.getElementById(chosenId).style.display = 'flex';
-  document.getElementById(chosenId).innerHTML = `
+      document.getElementById(chosenId).style.display = 'flex';
+      document.getElementById(chosenId).innerHTML = `
     <div class="file-chosen">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -603,431 +1340,431 @@ function processFile(type, file) {
       </div>
       <button class="file-remove" onclick="clearFile('${type}')" title="Remove">✕</button>
     </div>`;
-  document.getElementById(dropId).style.display = 'none';
-}
-
-function clearFile(type) {
-  if (type==='resume') { state.resumeFile   = null; document.getElementById('file-resume').value   = ''; }
-  else                 { state.templateFile = null; document.getElementById('file-template').value = ''; }
-  const chosenId = type==='resume' ? 'chosen-resume'   : 'chosen-template';
-  const dropId   = type==='resume' ? 'drop-resume'     : 'drop-template';
-  document.getElementById(chosenId).style.display = 'none';
-  document.getElementById(dropId).style.display   = 'block';
-}
-
-// ─── SUMMARY ──────────────────────────────────────────────────────────────────
-function buildSummary() {
-  const fmt = document.querySelector('input[name="format"]:checked')?.value || 'andrew';
-  const rows = [
-    ['Format',       FORMATS[fmt].label],
-    ['Resume',       state.resumeFile   ? state.resumeFile.name   : '⚠ Not uploaded'],
-    ['Template',     state.templateFile ? state.templateFile.name : '⚠ Not uploaded'],
-    ['Output',       (document.getElementById('output-name').value || 'Formatted_Resume') + '.docx'],
-    ['Client notes', document.getElementById('client-notes').value.trim() ? 'Yes (provided)' : 'None'],
-  ];
-  if (fmt === 'andrew') {
-    const cn = document.getElementById('consultant-name').value.trim();
-    const ct = document.getElementById('consultant-tel').value.trim();
-    if (cn) rows.push(['Consultant name', cn]);
-    if (ct) rows.push(['Consultant tel',  ct]);
-  }
-  document.getElementById('summary-body').innerHTML = rows.map(([k,v]) =>
-    `<div class="summary-row"><span class="summary-key">${k}</span><span class="summary-val">${v}</span></div>`
-  ).join('');
-}
-
-// ─── LOGGING ──────────────────────────────────────────────────────────────────
-function log(msg, type='info') {
-  const box = document.getElementById('log-box');
-  const cls = {ok:'log-ok', err:'log-err', info:'log-info', warn:'log-warn'}[type] || 'log-info';
-  const pre = {ok:'✓', err:'✗', info:'→', warn:'⚠'}[type] || '→';
-  box.innerHTML += `<div class="${cls}">${pre} ${msg}</div>`;
-  box.scrollTop = box.scrollHeight;
-}
-
-function setProgress(pct, label) {
-  document.getElementById('progress-bar').style.width        = pct + '%';
-  document.getElementById('progress-pct').textContent        = pct + '%';
-  document.getElementById('progress-label-text').textContent = label;
-}
-
-// ─── XML HELPERS ──────────────────────────────────────────────────────────────
-function escape(text) {
-  return String(text)
-    .replace(/ +/g,' ')
-    .replace(/–/g,'-').replace(/—/g,'-')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#x2019;');
-}
-function pid(n) { return ((0x10000000+n)>>>0).toString(16).toUpperCase().padStart(8,'0'); }
-const PARA_ATTRS = p =>
-  `w14:paraId="${pid(p)}" w14:textId="77777777" w:rsidR="00785EDF" w:rsidRPr="00062866" w:rsidRDefault="00785EDF" w:rsidP="00062866"`;
-
-function getTabsXml(fmt) {
-  return fmt.use_andrew_tabs
-    ? '<w:tabs><w:tab w:val="right" w:pos="1980"/><w:tab w:val="left" w:pos="2520"/></w:tabs>'
-    : '<w:tabs><w:tab w:val="left" w:pos="3969"/></w:tabs>';
-}
-function getFontXml(fmt) {
-  return fmt.use_theme_font
-    ? '<w:rFonts w:asciiTheme="majorHAnsi" w:hAnsiTheme="majorHAnsi" w:cstheme="majorHAnsi"/>'
-    : `<w:rFonts w:ascii="${fmt.font_name}" w:hAnsi="${fmt.font_name}" w:cs="${fmt.font_name}"/>`;
-}
-function rprBold  (fmt,u=false) { return `<w:rPr>${getFontXml(fmt)}<w:b/>${u?'<w:u w:val="single"/>':''}<w:sz w:val="${fmt.font_size}"/><w:szCs w:val="${fmt.font_size}"/></w:rPr>`; }
-function rprNormal(fmt)         { return `<w:rPr>${getFontXml(fmt)}<w:sz w:val="${fmt.font_size}"/><w:szCs w:val="${fmt.font_size}"/></w:rPr>`; }
-function rprPlain (fmt)         { return `<w:rPr>${getFontXml(fmt)}</w:rPr>`; }
-
-let _pCtr = 1;
-function np() { return _pCtr++; }
-
-function xmlSectionHeader(text, fmt) {
-  const n   = np();
-  const shd = fmt.use_grey_header_shading ? `<w:shd w:val="clear" w:color="auto" w:fill="${fmt.header_fill}"/>` : '';
-  const tab = fmt.header_alignment !== 'center' ? '<w:tab/>' : '';
-  const u   = fmt.header_underlined;
-  return `<w:p ${PARA_ATTRS(n)}><w:pPr><w:pStyle w:val="${fmt.section_header_style}"/>${shd}${getTabsXml(fmt)}<w:jc w:val="${fmt.header_alignment}"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprBold(fmt,u)}</w:pPr><w:r>${rprBold(fmt,u)}${tab}<w:t>${escape(text)}</w:t></w:r></w:p>`;
-}
-function xmlSpacer(fmt) {
-  return `<w:p ${PARA_ATTRS(np())}><w:pPr>${getTabsXml(fmt)}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprNormal(fmt)}</w:pPr></w:p>`;
-}
-function xmlCvHeader(fmt) {
-  const u = fmt.header_underlined;
-  return `<w:p ${PARA_ATTRS(np())}><w:pPr><w:jc w:val="center"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprBold(fmt,u)}</w:pPr><w:r>${rprBold(fmt,u)}<w:t>CURRICULUM VITAE</w:t></w:r></w:p>`;
-}
-function xmlPersonalRow(label, value, fmt, secondary=false, isBold=true) {
-  const style   = secondary ? fmt.personal_row_style_2 : fmt.personal_row_style;
-  const valXml  = value ? `<w:r>${rprNormal(fmt)}<w:t>${escape(value)}</w:t></w:r>` : '';
-  const tabLead = fmt.use_left_aligned_labels ? '' : '<w:tab/>';
-  const labelRpr = isBold ? rprBold(fmt) : rprNormal(fmt);
-  return `<w:p ${PARA_ATTRS(np())}><w:pPr><w:pStyle w:val="${style}"/>${getTabsXml(fmt)}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprNormal(fmt)}</w:pPr><w:r>${labelRpr}${tabLead}<w:t>${escape(label)}</w:t><w:tab/></w:r>${valXml}</w:p>`;
-}
-function xmlDateOrgRow(date, org, fmt) {
-  if (fmt.use_column_layout) {
-    const dStr = date && !date.endsWith(':') ? date+':' : date;
-    return `<w:p ${PARA_ATTRS(np())}><w:pPr>${getTabsXml(fmt)}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprBold(fmt)}</w:pPr><w:r>${rprBold(fmt)}<w:t>${escape(dStr)}</w:t><w:tab/><w:t>${escape(org)}</w:t></w:r></w:p>`;
-  }
-  const tabLead = fmt.use_left_aligned_labels ? '' : '<w:tab/>';
-  return `<w:p ${PARA_ATTRS(np())}><w:pPr>${getTabsXml(fmt)}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprBold(fmt)}</w:pPr><w:r>${rprBold(fmt)}${tabLead}<w:t>${escape(date)}</w:t><w:tab/><w:t>${escape(org)}</w:t></w:r></w:p>`;
-}
-function xmlPositionRow(title, fmt) {
-  if (fmt.use_column_layout) {
-    return `<w:p ${PARA_ATTRS(np())}><w:pPr>${getTabsXml(fmt)}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprBold(fmt)}</w:pPr><w:r>${rprBold(fmt)}<w:t>POSITION:</w:t><w:tab/><w:t>${escape(title)}</w:t></w:r></w:p>`;
-  }
-  const tabLead = fmt.use_left_aligned_labels ? '' : '<w:tab/>';
-  return `<w:p ${PARA_ATTRS(np())}><w:pPr>${getTabsXml(fmt)}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprBold(fmt)}</w:pPr><w:r>${rprBold(fmt)}${tabLead}<w:t>Position:</w:t><w:tab/><w:t>${escape(title)}</w:t></w:r></w:p>`;
-}
-function xmlWorkBullet(text, fmt) {
-  if (fmt.use_jack_work_style && text.includes(':')) {
-    const idx   = text.indexOf(':');
-    const label = text.slice(0, idx+1);
-    const val   = text.slice(idx+1);
-    return `<w:p ${PARA_ATTRS(np())}><w:pPr><w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/><w:ind w:left="720" w:hanging="360"/>${rprPlain(fmt)}</w:pPr><w:r>${rprPlain(fmt)}<w:t>•</w:t><w:tab/></w:r><w:r>${rprBold(fmt)}<w:t>${escape(label)}</w:t></w:r><w:r>${rprPlain(fmt)}<w:t>${escape(val)}</w:t></w:r></w:p>`;
-  }
-  return `<w:p ${PARA_ATTRS(np())}><w:pPr><w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/><w:ind w:left="720" w:hanging="360"/>${rprPlain(fmt)}</w:pPr><w:r>${rprPlain(fmt)}<w:t>•</w:t><w:tab/></w:r><w:r>${rprPlain(fmt)}<w:t>${escape(text)}</w:t></w:r></w:p>`;
-}
-function xmlPlainText(text, fmt, indent=706) {
-  const ind = indent ? `<w:ind w:left="${indent}"/>` : '';
-  return `<w:p ${PARA_ATTRS(np())}><w:pPr>${ind}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprNormal(fmt)}</w:pPr><w:r>${rprNormal(fmt)}<w:t>${escape(text)}</w:t></w:r></w:p>`;
-}
-function xmlPlainBoldText(text, fmt, indent=0, hasTopBorder=false) {
-  const ind = indent ? `<w:ind w:left="${indent}"/>` : '';
-  const bdr = hasTopBorder ? '<w:pBdr><w:top w:val="single" w:sz="6" w:space="1" w:color="A6A6A6"/></w:pBdr>' : '';
-  return `<w:p ${PARA_ATTRS(np())}><w:pPr>${ind}${bdr}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprBold(fmt)}</w:pPr><w:r>${rprBold(fmt)}<w:t>${escape(text)}</w:t></w:r></w:p>`;
-}
-
-// ─── DOCUMENT BUILDER ─────────────────────────────────────────────────────────
-function buildDocumentXml(data, templateDocXml, fmt, consultantData) {
-  _pCtr = 1;
-  const personal   = data.personal        || {};
-  const education  = data.education        || [];
-  const workExp    = data.work_experience  || [];
-  const consultant = consultantData        || data.consultant || {};
-  const profile    = data.candidate_profile || '';
-  const skills     = data.skills           || [];
-
-  const parts = [];
-  const add   = x => parts.push(x);
-
-  add(xmlSpacer(fmt));
-  if (fmt.show_cv_header) { add(xmlCvHeader(fmt)); add(xmlSpacer(fmt)); }
-
-  // Personal
-  add(xmlSectionHeader(fmt.section_personal, fmt));
-  add(xmlSpacer(fmt));
-  add(xmlPersonalRow('Name',     personal.name     || '', fmt, false, false));
-  add(xmlPersonalRow('Location', personal.location || '', fmt, false, false));
-  if (fmt.show_right_to_work && personal.right_to_work) add(xmlPersonalRow('Right to Work', personal.right_to_work, fmt, true));
-  if (fmt.show_notice        && personal.notice)        add(xmlPersonalRow('Notice',        personal.notice,        fmt, true));
-  if (fmt.show_languages     && personal.languages)     add(xmlPersonalRow('Languages',     personal.languages,     fmt, true));
-  add(xmlSpacer(fmt));
-
-  // Education
-  if (education.length) {
-    add(xmlSpacer(fmt));
-    add(xmlSectionHeader(fmt.section_education, fmt));
-    add(xmlSpacer(fmt));
-    education.forEach(edu => {
-      if (fmt.use_jack_work_style) {
-        add(xmlDateOrgRow(edu.date||'', edu.institution||'', fmt));
-        if (edu.degree) add(xmlDateOrgRow('', edu.degree, fmt));
-        (edu.bullets||[]).forEach(b => { if (b.trim()) add(xmlPlainText(b.trim(), fmt, 3969)); });
-      } else {
-        add(xmlDateOrgRow(edu.date||'', edu.institution||'', fmt));
-        (edu.bullets||[]).forEach(b => { if (b.trim()) add(xmlWorkBullet(b.trim(), fmt)); });
-      }
-      add(xmlSpacer(fmt));
-    });
-  }
-
-  // Work Experience
-  if (workExp.length) {
-    add(xmlSpacer(fmt));
-    add(xmlSectionHeader(fmt.section_work, fmt));
-    add(xmlSpacer(fmt));
-    let first = true;
-    workExp.forEach(role => {
-      if (!first) add(xmlSpacer(fmt));
-      first = false;
-      add(xmlDateOrgRow(role.date||'', role.company||'', fmt));
-      add(xmlPositionRow(role.position||'', fmt));
-      if (!fmt.use_jack_work_style) add(xmlSpacer(fmt));
-      if (fmt.use_jack_work_style) {
-        const desc = (role.description||'').trim();
-        if (desc) add(xmlPlainText(desc, fmt, 0));
-        const bullets = role.bullets||[];
-        if (bullets.length) {
-          add(xmlPlainText('Key Achievements & Responsibilities', fmt, 0));
-          bullets.forEach(b => { if (b.trim()) add(xmlWorkBullet(b.trim(), fmt)); });
-        }
-      } else {
-        (role.bullets||[]).forEach(b => { if (b.trim()) add(xmlWorkBullet(b.trim(), fmt)); });
-      }
-    });
-  }
-
-  // Skills
-  if (fmt.show_skills && skills.length) {
-    add(xmlSpacer(fmt));
-    add(xmlSectionHeader(fmt.section_skills, fmt));
-    add(xmlSpacer(fmt));
-    let firstGroup = true;
-    skills.forEach(group => {
-      if (typeof group === 'object') {
-        const cat   = (group.category||'').trim();
-        const items = group.items||[];
-        if (cat) { add(xmlPlainBoldText(cat.toUpperCase(), fmt, 0, fmt.use_jack_work_style && !firstGroup)); firstGroup = false; }
-        items.forEach(item => { if (item.trim()) add(xmlWorkBullet(item.trim(), fmt)); });
-      } else {
-        if (group.trim()) add(xmlWorkBullet(group.trim(), fmt));
-      }
-    });
-    add(xmlSpacer(fmt));
-  }
-
-  // Candidate Profile
-  if (fmt.show_candidate_profile && profile) {
-    add(xmlSpacer(fmt));
-    add(xmlSectionHeader(fmt.section_profile, fmt));
-    add(xmlSpacer(fmt));
-    profile.split('\n').forEach(line => {
-      const l = line.trim();
-      if (l) {
-        if (fmt.use_jack_work_style) add(xmlWorkBullet(l, fmt));
-        else add(xmlPlainText(l, fmt, 0));
-      }
-    });
-    add(xmlSpacer(fmt));
-  }
-
-  // Consultant
-  if (fmt.show_consultant) {
-    add(xmlSectionHeader(fmt.section_consultant, fmt));
-    add(xmlSpacer(fmt));
-    if (consultant.name) add(xmlPlainText('Consultant Name: ' + consultant.name, fmt, 706));
-    if (consultant.tel)  add(xmlPlainText('Consultant Tel: '  + consultant.tel,  fmt, 706));
-    add(xmlSpacer(fmt));
-  }
-
-  const sectMatch   = templateDocXml.match(/<w:sectPr[\s\S]+?<\/w:sectPr>/);
-  const sectPr      = sectMatch ? sectMatch[0] : '<w:sectPr><w:pgSz w:w="12240" w:h="15840" w:code="1"/><w:pgMar w:top="2131" w:right="1440" w:bottom="1843" w:left="1440" w:header="1138" w:footer="936" w:gutter="0"/></w:sectPr>';
-  const headerMatch = templateDocXml.match(/([\s\S]*?<w:document[^>]+>)/);
-  const docHeader   = headerMatch ? headerMatch[1]
-    : '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 wp14">';
-
-  return `${docHeader}\n<w:body>${parts.join('')}${sectPr}</w:body>\n</w:document>`;
-}
-
-// ─── MAIN RUNNER ──────────────────────────────────────────────────────────────
-async function runFormatter() {
-  const apiKey      = document.getElementById('api-key').value.trim();
-  state.apiKey      = apiKey; // persist so callClaude() can read it
-  const fmtKey      = document.querySelector('input[name="format"]:checked')?.value || 'andrew';
-  const fmt         = FORMATS[fmtKey];
-  const clientNotes = document.getElementById('client-notes').value.trim();
-  const rawName     = document.getElementById('output-name').value.trim() || 'Formatted_Resume';
-  const outputName  = rawName.replace(/\.docx$/i,'') + '.docx';
-  state.outputName  = outputName;
-
-  if (!apiKey)             { showError('API key is required.');            return; }
-  if (!state.resumeFile)   { showError('Please upload a resume file.');    return; }
-  if (!state.templateFile) { showError('Please upload a template DOCX.');  return; }
-
-  const consultantData = {};
-  if (fmt.name === 'andrew') {
-    consultantData.name = document.getElementById('consultant-name').value.trim();
-    consultantData.tel  = document.getElementById('consultant-tel').value.trim();
-  }
-
-  document.getElementById('run-btn').style.display          = 'none';
-  document.getElementById('progress-section').style.display = 'block';
-  document.getElementById('error-section').style.display    = 'none';
-  document.getElementById('result-section').style.display   = 'none';
-  document.getElementById('back-btns').style.display        = 'none';
-  document.getElementById('log-box').innerHTML              = '';
-
-  try {
-    setProgress(10, 'Extracting text from resume…');
-    log('Reading resume file…', 'info');
-    const resumeText = await extractTextFromFile(state.resumeFile);
-    log(`Extracted ${resumeText.length} characters`, 'ok');
-
-    setProgress(25, 'Calling Claude API…');
-    log(`Format: [${fmt.label}]`, 'info');
-    if (clientNotes) log('Client notes applied ✓', 'info');
-    log('Calling Claude API to parse & structure resume…', 'info');
-    const resumeData = await callClaudeApi(apiKey, resumeText, fmt, clientNotes);
-    log('Resume parsed and structured ✓', 'ok');
-
-    setProgress(55, 'Processing template DOCX…');
-    log('Unpacking template DOCX…', 'info');
-    const zip = await JSZip.loadAsync(state.templateFile);
-    const docXmlFile = zip.file('word/document.xml');
-    if (!docXmlFile) throw new Error('Template does not contain word/document.xml');
-    const templateDocXml = await docXmlFile.async('string');
-    log('Template unpacked ✓', 'ok');
-
-    setProgress(70, 'Building document XML…');
-    log('Building formatted document XML…', 'info');
-    const newXml = buildDocumentXml(resumeData, templateDocXml, fmt, consultantData);
-    zip.file('word/document.xml', newXml);
-    log('document.xml rebuilt ✓', 'ok');
-
-    setProgress(88, 'Packing final DOCX…');
-    log('Repacking DOCX…', 'info');
-    const outBlob = await zip.generateAsync({
-      type:'blob',
-      mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      compression:'DEFLATE'
-    });
-    state.outputBlob = outBlob;
-    log('DOCX packed ✓', 'ok');
-
-    setProgress(100, 'Complete!');
-    log(`Output ready: ${outputName}`, 'ok');
-
-    setTimeout(() => {
-      document.getElementById('progress-section').style.display = 'none';
-      document.getElementById('result-section').style.display   = 'block';
-    }, 600);
-
-  } catch (err) {
-    log(err.message, 'err');
-    showError(err.message);
-    document.getElementById('run-btn').style.display   = 'inline-flex';
-    document.getElementById('back-btns').style.display = 'flex';
-  }
-}
-
-// ─── TEXT EXTRACTION ──────────────────────────────────────────────────────────
-async function extractTextFromFile(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (ext === 'txt')  return await file.text();
-  if (ext === 'docx') {
-    const ab     = await file.arrayBuffer();
-    const result = await mammoth.extractRawText({ arrayBuffer: ab });
-    if (!result.value.trim()) throw new Error('Could not extract text from DOCX. File may be image-based.');
-    return result.value;
-  }
-  if (ext === 'pdf')  return await extractTextFromPdf(file);
-  throw new Error('Unsupported file type: ' + ext);
-}
-
-async function extractTextFromPdf(file) {
-  if (!window.pdfjsLib) {
-    await new Promise((res, rej) => {
-      const s = document.createElement('script');
-      s.src    = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-      s.onload = res; s.onerror = rej;
-      document.head.appendChild(s);
-    });
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  }
-  const _ow = console.warn.bind(console);
-  const _oe = console.error.bind(console);
-  const filter = (...a) => {
-    const m = String(a[0]||'');
-    if (m.includes('TT:') || m.includes('undefined function') || m.includes('getImageData') ||
-        m.includes('FontType') || m.includes('cmaps') || m.includes('PDF.js')) return;
-    _ow(...a);
-  };
-  console.warn = filter; console.error = filter;
-  try {
-    const ab   = await file.arrayBuffer();
-    const pdf  = await window.pdfjsLib.getDocument({ data: ab, verbosity: 0 }).promise;
-    const text = [];
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page    = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const pg      = content.items.map(it => it.str).join(' ');
-      if (pg.trim()) text.push(pg.trim());
+      document.getElementById(dropId).style.display = 'none';
     }
-    const full = text.join('\n');
-    if (!full.trim()) throw new Error('PDF appears to be scanned/image-based — no text could be extracted. Please use a text-based PDF or convert to DOCX/TXT.');
-    return full;
-  } finally {
-    console.warn = _ow; console.error = _oe;
-  }
-}
 
-// ─── CLAUDE API ───────────────────────────────────────────────────────────────
-// Simple direct fetch — same pattern as Brenton format which works reliably.
-// Returns raw text; caller is responsible for JSON parsing.
-async function callClaude(system, user, maxTokens = 4096) {
-  const key = state.apiKey || document.getElementById('api-key').value.trim();
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type'                              : 'application/json',
-      'x-api-key'                                 : key,
-      'anthropic-version'                         : '2023-06-01',
-      'anthropic-dangerous-direct-browser-access' : 'true'
-    },
-    body: JSON.stringify({
-      model     : 'claude-sonnet-4-6',
-      max_tokens: maxTokens,
-      system,
-      messages  : [{ role: 'user', content: user }]
-    })
-  });
-  if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
-    const msg = e.error?.message || ('HTTP ' + res.status);
-    if (res.status === 401) throw new Error('Invalid API key (401) — check console.anthropic.com/keys');
-    if (res.status === 403) throw new Error('API key not authorised (403) — ensure it is active with credits');
-    if (res.status === 429) throw new Error('Rate limit hit (429) — wait a moment and retry');
-    throw new Error('Claude API error ' + res.status + ': ' + msg);
-  }
-  return (await res.json()).content[0].text;
-}
+    function clearFile(type) {
+      if (type === 'resume') { state.resumeFile = null; document.getElementById('file-resume').value = ''; }
+      else { state.templateFile = null; document.getElementById('file-template').value = ''; }
+      const chosenId = type === 'resume' ? 'chosen-resume' : 'chosen-template';
+      const dropId = type === 'resume' ? 'drop-resume' : 'drop-template';
+      document.getElementById(chosenId).style.display = 'none';
+      document.getElementById(dropId).style.display = 'block';
+    }
 
-async function callClaudeApi(apiKey, resumeText, fmt, clientNotes) {
-  const fmtInstr    = fmt.ai_extra_instructions
-    ? `\nFORMAT-SPECIFIC INSTRUCTIONS (${fmt.label}):\n${fmt.ai_extra_instructions}\n` : '';
-  const clientInstr = clientNotes
-    ? `\nCLIENT REQUIREMENTS (apply these specifically):\n${clientNotes}\n- Emphasise relevant experience.\n- Reorder bullet points to surface the most relevant skills first.\n- DO NOT invent anything — only surface what is in the original resume.\n` : '';
+    // ─── SUMMARY ──────────────────────────────────────────────────────────────────
+    function buildSummary() {
+      const fmt = document.querySelector('input[name="format"]:checked')?.value || 'andrew';
+      const rows = [
+        ['Format', FORMATS[fmt].label],
+        ['Resume', state.resumeFile ? state.resumeFile.name : '⚠ Not uploaded'],
+        ['Template', state.templateFile ? state.templateFile.name : '⚠ Not uploaded'],
+        ['Output', (document.getElementById('output-name').value || 'Formatted_Resume') + '.docx'],
+        ['Client notes', document.getElementById('client-notes').value.trim() ? 'Yes (provided)' : 'None'],
+      ];
+      if (fmt === 'andrew') {
+        const cn = document.getElementById('consultant-name').value.trim();
+        const ct = document.getElementById('consultant-tel').value.trim();
+        if (cn) rows.push(['Consultant name', cn]);
+        if (ct) rows.push(['Consultant tel', ct]);
+      }
+      document.getElementById('summary-body').innerHTML = rows.map(([k, v]) =>
+        `<div class="summary-row"><span class="summary-key">${k}</span><span class="summary-val">${v}</span></div>`
+      ).join('');
+    }
 
-  const systemPrompt = `You are a strict resume extraction engine. NOT a writer.
+    // ─── LOGGING ──────────────────────────────────────────────────────────────────
+    function log(msg, type = 'info') {
+      const box = document.getElementById('log-box');
+      const cls = { ok: 'log-ok', err: 'log-err', info: 'log-info', warn: 'log-warn' }[type] || 'log-info';
+      const pre = { ok: '✓', err: '✗', info: '→', warn: '⚠' }[type] || '→';
+      box.innerHTML += `<div class="${cls}">${pre} ${msg}</div>`;
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function setProgress(pct, label) {
+      document.getElementById('progress-bar').style.width = pct + '%';
+      document.getElementById('progress-pct').textContent = pct + '%';
+      document.getElementById('progress-label-text').textContent = label;
+    }
+
+    // ─── XML HELPERS ──────────────────────────────────────────────────────────────
+    function escape(text) {
+      return String(text)
+        .replace(/ +/g, ' ')
+        .replace(/–/g, '-').replace(/—/g, '-')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#x2019;');
+    }
+    function pid(n) { return ((0x10000000 + n) >>> 0).toString(16).toUpperCase().padStart(8, '0'); }
+    const PARA_ATTRS = p =>
+      `w14:paraId="${pid(p)}" w14:textId="77777777" w:rsidR="00785EDF" w:rsidRPr="00062866" w:rsidRDefault="00785EDF" w:rsidP="00062866"`;
+
+    function getTabsXml(fmt) {
+      return fmt.use_andrew_tabs
+        ? '<w:tabs><w:tab w:val="right" w:pos="1980"/><w:tab w:val="left" w:pos="2520"/></w:tabs>'
+        : '<w:tabs><w:tab w:val="left" w:pos="3969"/></w:tabs>';
+    }
+    function getFontXml(fmt) {
+      return fmt.use_theme_font
+        ? '<w:rFonts w:asciiTheme="majorHAnsi" w:hAnsiTheme="majorHAnsi" w:cstheme="majorHAnsi"/>'
+        : `<w:rFonts w:ascii="${fmt.font_name}" w:hAnsi="${fmt.font_name}" w:cs="${fmt.font_name}"/>`;
+    }
+    function rprBold(fmt, u = false) { return `<w:rPr>${getFontXml(fmt)}<w:b/>${u ? '<w:u w:val="single"/>' : ''}<w:sz w:val="${fmt.font_size}"/><w:szCs w:val="${fmt.font_size}"/></w:rPr>`; }
+    function rprNormal(fmt) { return `<w:rPr>${getFontXml(fmt)}<w:sz w:val="${fmt.font_size}"/><w:szCs w:val="${fmt.font_size}"/></w:rPr>`; }
+    function rprPlain(fmt) { return `<w:rPr>${getFontXml(fmt)}</w:rPr>`; }
+
+    let _pCtr = 1;
+    function np() { return _pCtr++; }
+
+    function xmlSectionHeader(text, fmt) {
+      const n = np();
+      const shd = fmt.use_grey_header_shading ? `<w:shd w:val="clear" w:color="auto" w:fill="${fmt.header_fill}"/>` : '';
+      const tab = fmt.header_alignment !== 'center' ? '<w:tab/>' : '';
+      const u = fmt.header_underlined;
+      return `<w:p ${PARA_ATTRS(n)}><w:pPr><w:pStyle w:val="${fmt.section_header_style}"/>${shd}${getTabsXml(fmt)}<w:jc w:val="${fmt.header_alignment}"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprBold(fmt, u)}</w:pPr><w:r>${rprBold(fmt, u)}${tab}<w:t>${escape(text)}</w:t></w:r></w:p>`;
+    }
+    function xmlSpacer(fmt) {
+      return `<w:p ${PARA_ATTRS(np())}><w:pPr>${getTabsXml(fmt)}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprNormal(fmt)}</w:pPr></w:p>`;
+    }
+    function xmlCvHeader(fmt) {
+      const u = fmt.header_underlined;
+      return `<w:p ${PARA_ATTRS(np())}><w:pPr><w:jc w:val="center"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprBold(fmt, u)}</w:pPr><w:r>${rprBold(fmt, u)}<w:t>CURRICULUM VITAE</w:t></w:r></w:p>`;
+    }
+    function xmlPersonalRow(label, value, fmt, secondary = false, isBold = true) {
+      const style = secondary ? fmt.personal_row_style_2 : fmt.personal_row_style;
+      const valXml = value ? `<w:r>${rprNormal(fmt)}<w:t>${escape(value)}</w:t></w:r>` : '';
+      const tabLead = fmt.use_left_aligned_labels ? '' : '<w:tab/>';
+      const labelRpr = isBold ? rprBold(fmt) : rprNormal(fmt);
+      return `<w:p ${PARA_ATTRS(np())}><w:pPr><w:pStyle w:val="${style}"/>${getTabsXml(fmt)}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprNormal(fmt)}</w:pPr><w:r>${labelRpr}${tabLead}<w:t>${escape(label)}</w:t><w:tab/></w:r>${valXml}</w:p>`;
+    }
+    function xmlDateOrgRow(date, org, fmt) {
+      if (fmt.use_column_layout) {
+        const dStr = date && !date.endsWith(':') ? date + ':' : date;
+        return `<w:p ${PARA_ATTRS(np())}><w:pPr>${getTabsXml(fmt)}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprBold(fmt)}</w:pPr><w:r>${rprBold(fmt)}<w:t>${escape(dStr)}</w:t><w:tab/><w:t>${escape(org)}</w:t></w:r></w:p>`;
+      }
+      const tabLead = fmt.use_left_aligned_labels ? '' : '<w:tab/>';
+      return `<w:p ${PARA_ATTRS(np())}><w:pPr>${getTabsXml(fmt)}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprBold(fmt)}</w:pPr><w:r>${rprBold(fmt)}${tabLead}<w:t>${escape(date)}</w:t><w:tab/><w:t>${escape(org)}</w:t></w:r></w:p>`;
+    }
+    function xmlPositionRow(title, fmt) {
+      if (fmt.use_column_layout) {
+        return `<w:p ${PARA_ATTRS(np())}><w:pPr>${getTabsXml(fmt)}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprBold(fmt)}</w:pPr><w:r>${rprBold(fmt)}<w:t>POSITION:</w:t><w:tab/><w:t>${escape(title)}</w:t></w:r></w:p>`;
+      }
+      const tabLead = fmt.use_left_aligned_labels ? '' : '<w:tab/>';
+      return `<w:p ${PARA_ATTRS(np())}><w:pPr>${getTabsXml(fmt)}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprBold(fmt)}</w:pPr><w:r>${rprBold(fmt)}${tabLead}<w:t>Position:</w:t><w:tab/><w:t>${escape(title)}</w:t></w:r></w:p>`;
+    }
+    function xmlWorkBullet(text, fmt) {
+      if (fmt.use_jack_work_style && text.includes(':')) {
+        const idx = text.indexOf(':');
+        const label = text.slice(0, idx + 1);
+        const val = text.slice(idx + 1);
+        return `<w:p ${PARA_ATTRS(np())}><w:pPr><w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/><w:ind w:left="720" w:hanging="360"/>${rprPlain(fmt)}</w:pPr><w:r>${rprPlain(fmt)}<w:t>•</w:t><w:tab/></w:r><w:r>${rprBold(fmt)}<w:t>${escape(label)}</w:t></w:r><w:r>${rprPlain(fmt)}<w:t>${escape(val)}</w:t></w:r></w:p>`;
+      }
+      return `<w:p ${PARA_ATTRS(np())}><w:pPr><w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/><w:ind w:left="720" w:hanging="360"/>${rprPlain(fmt)}</w:pPr><w:r>${rprPlain(fmt)}<w:t>•</w:t><w:tab/></w:r><w:r>${rprPlain(fmt)}<w:t>${escape(text)}</w:t></w:r></w:p>`;
+    }
+    function xmlPlainText(text, fmt, indent = 706) {
+      const ind = indent ? `<w:ind w:left="${indent}"/>` : '';
+      return `<w:p ${PARA_ATTRS(np())}><w:pPr>${ind}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprNormal(fmt)}</w:pPr><w:r>${rprNormal(fmt)}<w:t>${escape(text)}</w:t></w:r></w:p>`;
+    }
+    function xmlPlainBoldText(text, fmt, indent = 0, hasTopBorder = false) {
+      const ind = indent ? `<w:ind w:left="${indent}"/>` : '';
+      const bdr = hasTopBorder ? '<w:pBdr><w:top w:val="single" w:sz="6" w:space="1" w:color="A6A6A6"/></w:pBdr>' : '';
+      return `<w:p ${PARA_ATTRS(np())}><w:pPr>${ind}${bdr}<w:jc w:val="both"/><w:spacing w:line="${fmt.line_spacing}" w:lineRule="auto"/>${rprBold(fmt)}</w:pPr><w:r>${rprBold(fmt)}<w:t>${escape(text)}</w:t></w:r></w:p>`;
+    }
+
+    // ─── DOCUMENT BUILDER ─────────────────────────────────────────────────────────
+    function buildDocumentXml(data, templateDocXml, fmt, consultantData) {
+      _pCtr = 1;
+      const personal = data.personal || {};
+      const education = data.education || [];
+      const workExp = data.work_experience || [];
+      const consultant = consultantData || data.consultant || {};
+      const profile = data.candidate_profile || '';
+      const skills = data.skills || [];
+
+      const parts = [];
+      const add = x => parts.push(x);
+
+      add(xmlSpacer(fmt));
+      if (fmt.show_cv_header) { add(xmlCvHeader(fmt)); add(xmlSpacer(fmt)); }
+
+      // Personal
+      add(xmlSectionHeader(fmt.section_personal, fmt));
+      add(xmlSpacer(fmt));
+      add(xmlPersonalRow('Name', personal.name || '', fmt, false, false));
+      add(xmlPersonalRow('Location', personal.location || '', fmt, false, false));
+      if (fmt.show_right_to_work && personal.right_to_work) add(xmlPersonalRow('Right to Work', personal.right_to_work, fmt, true));
+      if (fmt.show_notice && personal.notice) add(xmlPersonalRow('Notice', personal.notice, fmt, true));
+      if (fmt.show_languages && personal.languages) add(xmlPersonalRow('Languages', personal.languages, fmt, true));
+      add(xmlSpacer(fmt));
+
+      // Education
+      if (education.length) {
+        add(xmlSpacer(fmt));
+        add(xmlSectionHeader(fmt.section_education, fmt));
+        add(xmlSpacer(fmt));
+        education.forEach(edu => {
+          if (fmt.use_jack_work_style) {
+            add(xmlDateOrgRow(edu.date || '', edu.institution || '', fmt));
+            if (edu.degree) add(xmlDateOrgRow('', edu.degree, fmt));
+            (edu.bullets || []).forEach(b => { if (b.trim()) add(xmlPlainText(b.trim(), fmt, 3969)); });
+          } else {
+            add(xmlDateOrgRow(edu.date || '', edu.institution || '', fmt));
+            (edu.bullets || []).forEach(b => { if (b.trim()) add(xmlWorkBullet(b.trim(), fmt)); });
+          }
+          add(xmlSpacer(fmt));
+        });
+      }
+
+      // Work Experience
+      if (workExp.length) {
+        add(xmlSpacer(fmt));
+        add(xmlSectionHeader(fmt.section_work, fmt));
+        add(xmlSpacer(fmt));
+        let first = true;
+        workExp.forEach(role => {
+          if (!first) add(xmlSpacer(fmt));
+          first = false;
+          add(xmlDateOrgRow(role.date || '', role.company || '', fmt));
+          add(xmlPositionRow(role.position || '', fmt));
+          if (!fmt.use_jack_work_style) add(xmlSpacer(fmt));
+          if (fmt.use_jack_work_style) {
+            const desc = (role.description || '').trim();
+            if (desc) add(xmlPlainText(desc, fmt, 0));
+            const bullets = role.bullets || [];
+            if (bullets.length) {
+              add(xmlPlainText('Key Achievements & Responsibilities', fmt, 0));
+              bullets.forEach(b => { if (b.trim()) add(xmlWorkBullet(b.trim(), fmt)); });
+            }
+          } else {
+            (role.bullets || []).forEach(b => { if (b.trim()) add(xmlWorkBullet(b.trim(), fmt)); });
+          }
+        });
+      }
+
+      // Skills
+      if (fmt.show_skills && skills.length) {
+        add(xmlSpacer(fmt));
+        add(xmlSectionHeader(fmt.section_skills, fmt));
+        add(xmlSpacer(fmt));
+        let firstGroup = true;
+        skills.forEach(group => {
+          if (typeof group === 'object') {
+            const cat = (group.category || '').trim();
+            const items = group.items || [];
+            if (cat) { add(xmlPlainBoldText(cat.toUpperCase(), fmt, 0, fmt.use_jack_work_style && !firstGroup)); firstGroup = false; }
+            items.forEach(item => { if (item.trim()) add(xmlWorkBullet(item.trim(), fmt)); });
+          } else {
+            if (group.trim()) add(xmlWorkBullet(group.trim(), fmt));
+          }
+        });
+        add(xmlSpacer(fmt));
+      }
+
+      // Candidate Profile
+      if (fmt.show_candidate_profile && profile) {
+        add(xmlSpacer(fmt));
+        add(xmlSectionHeader(fmt.section_profile, fmt));
+        add(xmlSpacer(fmt));
+        profile.split('\n').forEach(line => {
+          const l = line.trim();
+          if (l) {
+            if (fmt.use_jack_work_style) add(xmlWorkBullet(l, fmt));
+            else add(xmlPlainText(l, fmt, 0));
+          }
+        });
+        add(xmlSpacer(fmt));
+      }
+
+      // Consultant
+      if (fmt.show_consultant) {
+        add(xmlSectionHeader(fmt.section_consultant, fmt));
+        add(xmlSpacer(fmt));
+        if (consultant.name) add(xmlPlainText('Consultant Name: ' + consultant.name, fmt, 706));
+        if (consultant.tel) add(xmlPlainText('Consultant Tel: ' + consultant.tel, fmt, 706));
+        add(xmlSpacer(fmt));
+      }
+
+      const sectMatch = templateDocXml.match(/<w:sectPr[\s\S]+?<\/w:sectPr>/);
+      const sectPr = sectMatch ? sectMatch[0] : '<w:sectPr><w:pgSz w:w="12240" w:h="15840" w:code="1"/><w:pgMar w:top="2131" w:right="1440" w:bottom="1843" w:left="1440" w:header="1138" w:footer="936" w:gutter="0"/></w:sectPr>';
+      const headerMatch = templateDocXml.match(/([\s\S]*?<w:document[^>]+>)/);
+      const docHeader = headerMatch ? headerMatch[1]
+        : '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 wp14">';
+
+      return `${docHeader}\n<w:body>${parts.join('')}${sectPr}</w:body>\n</w:document>`;
+    }
+
+    // ─── MAIN RUNNER ──────────────────────────────────────────────────────────────
+    async function runFormatter() {
+      const apiKey = document.getElementById('api-key').value.trim();
+      state.apiKey = apiKey; // persist so callClaude() can read it
+      const fmtKey = document.querySelector('input[name="format"]:checked')?.value || 'andrew';
+      const fmt = FORMATS[fmtKey];
+      const clientNotes = document.getElementById('client-notes').value.trim();
+      const rawName = document.getElementById('output-name').value.trim() || 'Formatted_Resume';
+      const outputName = rawName.replace(/\.docx$/i, '') + '.docx';
+      state.outputName = outputName;
+
+      if (!apiKey) { showError('API key is required.'); return; }
+      if (!state.resumeFile) { showError('Please upload a resume file.'); return; }
+      if (!state.templateFile) { showError('Please upload a template DOCX.'); return; }
+
+      const consultantData = {};
+      if (fmt.name === 'andrew') {
+        consultantData.name = document.getElementById('consultant-name').value.trim();
+        consultantData.tel = document.getElementById('consultant-tel').value.trim();
+      }
+
+      document.getElementById('run-btn').style.display = 'none';
+      document.getElementById('progress-section').style.display = 'block';
+      document.getElementById('error-section').style.display = 'none';
+      document.getElementById('result-section').style.display = 'none';
+      document.getElementById('back-btns').style.display = 'none';
+      document.getElementById('log-box').innerHTML = '';
+
+      try {
+        setProgress(10, 'Extracting text from resume…');
+        log('Reading resume file…', 'info');
+        const resumeText = await extractTextFromFile(state.resumeFile);
+        log(`Extracted ${resumeText.length} characters`, 'ok');
+
+        setProgress(25, 'Calling Claude API…');
+        log(`Format: [${fmt.label}]`, 'info');
+        if (clientNotes) log('Client notes applied ✓', 'info');
+        log('Calling Claude API to parse & structure resume…', 'info');
+        const resumeData = await callClaudeApi(apiKey, resumeText, fmt, clientNotes);
+        log('Resume parsed and structured ✓', 'ok');
+
+        setProgress(55, 'Processing template DOCX…');
+        log('Unpacking template DOCX…', 'info');
+        const zip = await JSZip.loadAsync(state.templateFile);
+        const docXmlFile = zip.file('word/document.xml');
+        if (!docXmlFile) throw new Error('Template does not contain word/document.xml');
+        const templateDocXml = await docXmlFile.async('string');
+        log('Template unpacked ✓', 'ok');
+
+        setProgress(70, 'Building document XML…');
+        log('Building formatted document XML…', 'info');
+        const newXml = buildDocumentXml(resumeData, templateDocXml, fmt, consultantData);
+        zip.file('word/document.xml', newXml);
+        log('document.xml rebuilt ✓', 'ok');
+
+        setProgress(88, 'Packing final DOCX…');
+        log('Repacking DOCX…', 'info');
+        const outBlob = await zip.generateAsync({
+          type: 'blob',
+          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          compression: 'DEFLATE'
+        });
+        state.outputBlob = outBlob;
+        log('DOCX packed ✓', 'ok');
+
+        setProgress(100, 'Complete!');
+        log(`Output ready: ${outputName}`, 'ok');
+
+        setTimeout(() => {
+          document.getElementById('progress-section').style.display = 'none';
+          document.getElementById('result-section').style.display = 'block';
+        }, 600);
+
+      } catch (err) {
+        log(err.message, 'err');
+        showError(err.message);
+        document.getElementById('run-btn').style.display = 'inline-flex';
+        document.getElementById('back-btns').style.display = 'flex';
+      }
+    }
+
+    // ─── TEXT EXTRACTION ──────────────────────────────────────────────────────────
+    async function extractTextFromFile(file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (ext === 'txt') return await file.text();
+      if (ext === 'docx') {
+        const ab = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer: ab });
+        if (!result.value.trim()) throw new Error('Could not extract text from DOCX. File may be image-based.');
+        return result.value;
+      }
+      if (ext === 'pdf') return await extractTextFromPdf(file);
+      throw new Error('Unsupported file type: ' + ext);
+    }
+
+    async function extractTextFromPdf(file) {
+      if (!window.pdfjsLib) {
+        await new Promise((res, rej) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+          s.onload = res; s.onerror = rej;
+          document.head.appendChild(s);
+        });
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+      const _ow = console.warn.bind(console);
+      const _oe = console.error.bind(console);
+      const filter = (...a) => {
+        const m = String(a[0] || '');
+        if (m.includes('TT:') || m.includes('undefined function') || m.includes('getImageData') ||
+          m.includes('FontType') || m.includes('cmaps') || m.includes('PDF.js')) return;
+        _ow(...a);
+      };
+      console.warn = filter; console.error = filter;
+      try {
+        const ab = await file.arrayBuffer();
+        const pdf = await window.pdfjsLib.getDocument({ data: ab, verbosity: 0 }).promise;
+        const text = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const pg = content.items.map(it => it.str).join(' ');
+          if (pg.trim()) text.push(pg.trim());
+        }
+        const full = text.join('\n');
+        if (!full.trim()) throw new Error('PDF appears to be scanned/image-based — no text could be extracted. Please use a text-based PDF or convert to DOCX/TXT.');
+        return full;
+      } finally {
+        console.warn = _ow; console.error = _oe;
+      }
+    }
+
+    // ─── CLAUDE API ───────────────────────────────────────────────────────────────
+    // Simple direct fetch — same pattern as Brenton format which works reliably.
+    // Returns raw text; caller is responsible for JSON parsing.
+    async function callClaude(system, user, maxTokens = 4096) {
+      const key = state.apiKey || document.getElementById('api-key').value.trim();
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: maxTokens,
+          system,
+          messages: [{ role: 'user', content: user }]
+        })
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        const msg = e.error?.message || ('HTTP ' + res.status);
+        if (res.status === 401) throw new Error('Invalid API key (401) — check console.anthropic.com/keys');
+        if (res.status === 403) throw new Error('API key not authorised (403) — ensure it is active with credits');
+        if (res.status === 429) throw new Error('Rate limit hit (429) — wait a moment and retry');
+        throw new Error('Claude API error ' + res.status + ': ' + msg);
+      }
+      return (await res.json()).content[0].text;
+    }
+
+    async function callClaudeApi(apiKey, resumeText, fmt, clientNotes) {
+      const fmtInstr = fmt.ai_extra_instructions
+        ? `\nFORMAT-SPECIFIC INSTRUCTIONS (${fmt.label}):\n${fmt.ai_extra_instructions}\n` : '';
+      const clientInstr = clientNotes
+        ? `\nCLIENT REQUIREMENTS (apply these specifically):\n${clientNotes}\n- Emphasise relevant experience.\n- Reorder bullet points to surface the most relevant skills first.\n- DO NOT invent anything — only surface what is in the original resume.\n` : '';
+
+      const systemPrompt = `You are a strict resume extraction engine. NOT a writer.
 
 PRIMARY OBJECTIVE:
 Convert the input resume into structured JSON with ZERO content modification (EXCEPT dates — see DATE FORMATTING RULES).
@@ -1063,36 +1800,36 @@ OUTPUT FORMAT:
 }
 ${fmtInstr}${clientInstr}`;
 
-  // Call Claude and get raw text back
-  const rawText = await callClaude(systemPrompt, `Parse this resume and return ONLY JSON:\n\n${resumeText}`, 4096);
+      // Call Claude and get raw text back
+      const rawText = await callClaude(systemPrompt, `Parse this resume and return ONLY JSON:\n\n${resumeText}`, 4096);
 
-  // Robust JSON parsing — strip fences then extract first {...} block
-  let cleaned = rawText.replace(/^```json\s*|^```\s*|```\s*$/gm, '').trim();
-  const match = cleaned.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('No JSON found in Claude response. Raw: ' + rawText.slice(0, 300));
-  try {
-    return JSON.parse(match[0]);
-  } catch (e) {
-    throw new Error('JSON parse failed: ' + e.message + '\n\nRaw (first 300 chars):\n' + rawText.slice(0, 300));
-  }
-}
+      // Robust JSON parsing — strip fences then extract first {...} block
+      let cleaned = rawText.replace(/^```json\s*|^```\s*|```\s*$/gm, '').trim();
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error('No JSON found in Claude response. Raw: ' + rawText.slice(0, 300));
+      try {
+        return JSON.parse(match[0]);
+      } catch (e) {
+        throw new Error('JSON parse failed: ' + e.message + '\n\nRaw (first 300 chars):\n' + rawText.slice(0, 300));
+      }
+    }
 
-// ─── DOWNLOAD ─────────────────────────────────────────────────────────────────
-function downloadResult() {
-  if (!state.outputBlob) return;
-  const url = URL.createObjectURL(state.outputBlob);
-  const a   = document.createElement('a');
-  a.href = url; a.download = state.outputName;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
+    // ─── DOWNLOAD ─────────────────────────────────────────────────────────────────
+    function downloadResult() {
+      if (!state.outputBlob) return;
+      const url = URL.createObjectURL(state.outputBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = state.outputName;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
 
-function showError(msg) {
-  const sec = document.getElementById('error-section');
-  sec.style.display = 'block';
-  const html = msg.replace(/\n/g,'<br>');
-  sec.innerHTML = `
+    function showError(msg) {
+      const sec = document.getElementById('error-section');
+      sec.style.display = 'block';
+      const html = msg.replace(/\n/g, '<br>');
+      sec.innerHTML = `
     <div class="status-box error">
       <span class="status-icon">⚠️</span>
       <div class="status-text">
@@ -1100,21 +1837,22 @@ function showError(msg) {
         <p style="white-space:pre-line">${html}</p>
       </div>
     </div>`;
-}
+    }
 
-function resetAll() {
-  state.resumeFile   = null;
-  state.templateFile = null;
-  state.outputBlob   = null;
-  clearFile('resume');
-  clearFile('template');
-  document.getElementById('run-btn').style.display          = 'inline-flex';
-  document.getElementById('progress-section').style.display = 'none';
-  document.getElementById('result-section').style.display   = 'none';
-  document.getElementById('error-section').style.display    = 'none';
-  document.getElementById('back-btns').style.display        = 'flex';
-  goStep(3);
-}
-</script>
+    function resetAll() {
+      state.resumeFile = null;
+      state.templateFile = null;
+      state.outputBlob = null;
+      clearFile('resume');
+      clearFile('template');
+      document.getElementById('run-btn').style.display = 'inline-flex';
+      document.getElementById('progress-section').style.display = 'none';
+      document.getElementById('result-section').style.display = 'none';
+      document.getElementById('error-section').style.display = 'none';
+      document.getElementById('back-btns').style.display = 'flex';
+      goStep(3);
+    }
+  </script>
 </body>
+
 </html>
