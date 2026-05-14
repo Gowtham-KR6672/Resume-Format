@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume Master</title>
+  <style>
+    :root {
+      --font-main: "Instrument Serif", Georgia, "Times New Roman", serif;
+      --font-heading: "Instrument Serif", Georgia, "Times New Roman", serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-main);
+      font-style: italic;
+      font-weight: 400;
+      color: #172033;
+      background: #eef2f6;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: relative;
+      background: linear-gradient(180deg, #101c31 0%, #15243e 100%);
+      color: #fff;
+      padding: 24px 18px;
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 10px 0 30px rgba(15, 28, 49, 0.14);
+    }
+
+    .brand {
+      margin: 0 0 26px;
+      padding: 0 8px 18px;
+      font-size: 23px;
+      font-weight: 400;
+      letter-spacing: 0;
+      line-height: 1.2;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .nav-button,
+    .dropdown-toggle {
+      width: 100%;
+      min-height: 46px;
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: #dce7f7;
+      background: transparent;
+      font: inherit;
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.2;
+      text-align: left;
+      cursor: pointer;
+      transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .nav-button:hover,
+    .dropdown-toggle:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      transform: translateX(2px);
+    }
+
+    .nav-button.active {
+      background: #ffffff;
+      color: #122039;
+      box-shadow: 0 10px 22px rgba(4, 13, 27, 0.18);
+    }
+
+    .nav-button.active::before {
+      content: "";
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      margin-right: 10px;
+      border-radius: 50%;
+      background: #c43b31;
+      vertical-align: 2px;
+    }
+
+    .dropdown-toggle.active {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .dropdown-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .chevron {
+      font-size: 15px;
+      line-height: 1;
+      transition: transform 160ms ease;
+    }
+
+    .dropdown:not(.open) .chevron {
+      transform: rotate(180deg) translateY(1px);
+    }
+
+    .dropdown-menu {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin: 8px 0 10px 18px;
+      padding: 5px 0 5px 18px;
+      border-left: 1px solid rgba(255, 255, 255, 0.22);
+    }
+
+    .dropdown.open .dropdown-menu {
+      display: flex;
+    }
+
+    .dropdown-menu .nav-button {
+      min-height: 38px;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.2;
+    }
+
+    .dropdown-menu .nav-button.active {
+      background: #ffffff;
+      color: #122039;
+    }
+
+    .viewer {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      min-width: 0;
+      background: #f7f9fc;
+    }
+
+    .viewer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 64px;
+      padding: 14px 20px;
+      background: #fff;
+      border-bottom: 1px solid #dde4ee;
+    }
+
+    .viewer-title {
+      margin: 0;
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 400;
+    }
+
+    .open-link {
+      color: #2158a8;
+      font-weight: 400;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .open-link:hover {
+      text-decoration: underline;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #fff;
+    }
+
+    @media (max-width: 760px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(70vh, 1fr);
+      }
+
+      .sidebar {
+        padding: 16px;
+      }
+
+      .nav {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .dropdown {
+        grid-column: span 2;
+      }
+
+      .viewer-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar" aria-label="Resume list">
+      <h1 class="brand">All Resumes</h1>
+      <nav class="nav">
+        <button class="nav-button" data-file="Andrew.html">Andrew Resume</button>
+
+        <div class="dropdown open">
+          <button class="dropdown-toggle" type="button" aria-expanded="true">
+            <span>Brendan Resume</span>
+            <span class="chevron">^</span>
+          </button>
+          <div class="dropdown-menu">
+            <button class="nav-button" data-file="Brendan_Format_with_table.html">Brendan Format with table</button>
+            <button class="nav-button" data-file="Brendan_Format_without_table.html">Brendan Format without table</button>
+          </div>
+        </div>
+
+        <button class="nav-button" data-file="Canterra_Group.html">Canterra Resume</button>
+        <button class="nav-button" data-file="Jack_Resume.html">Jack Resume</button>
+        <button class="nav-button" data-file="Nicki_Resume.html">Nicki Resume</button>
+        <button class="nav-button active" data-file="Rev1Energy.html">Rev 1 Energy Resume</button>
+      </nav>
+    </aside>
+
+    <section class="viewer">
+      <header class="viewer-header">
+        <h2 class="viewer-title" id="viewerTitle">Rev 1 Energy Resume</h2>
+        <a class="open-link" id="openLink" href="Rev1Energy.html" target="_blank" rel="noopener">Open in new tab</a>
+      </header>
+      <iframe id="resumeFrame" title="Selected resume" src="Rev1Energy.html"></iframe>
+    </section>
+  </main>
+
+  <script>
+    const frame = document.getElementById('resumeFrame');
+    const title = document.getElementById('viewerTitle');
+    const openLink = document.getElementById('openLink');
+    const buttons = document.querySelectorAll('[data-file]');
+    const dropdown = document.querySelector('.dropdown');
+    const dropdownToggle = document.querySelector('.dropdown-toggle');
+
+    function loadResume(button) {
+      const file = button.dataset.file;
+      const label = button.textContent.trim();
+      const parentDropdown = button.closest('.dropdown');
+
+      buttons.forEach(item => item.classList.remove('active'));
+      document.querySelectorAll('.dropdown-toggle').forEach(item => item.classList.remove('active'));
+
+      button.classList.add('active');
+      if (parentDropdown) {
+        parentDropdown.querySelector('.dropdown-toggle').classList.add('active');
+      }
+
+      frame.src = file;
+      openLink.href = file;
+      title.textContent = parentDropdown ? `Brendan - ${label}` : label;
+    }
+
+    buttons.forEach(button => {
+      button.addEventListener('click', () => loadResume(button));
+    });
+
+    dropdownToggle.addEventListener('click', () => {
+      const isOpen = dropdown.classList.toggle('open');
+      dropdownToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resume Converter — PDF → DOCX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root {
+    --ink: #1a1814;
+    --ink-2: #4a4640;
+    --ink-3: #8a857e;
+    --paper: #f7f4ef;
+    --paper-2: #edeae3;
+    --paper-3: #e0dcd4;
+    --accent: #c84b1f;
+    --accent-light: #f5e8e2;
+    --accent-dark: #8f3010;
+    --green: #2a6b3c;
+    --green-light: #e4f0e8;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --serif: 'Playfair Display', serif;
+    --radius: 6px;
+    --radius-lg: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── LAYOUT ── */
+  .shell {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    background: var(--ink);
+    color: #d4cfc8;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .logo {
+    font-family: var(--serif);
+    font-size: 20px;
+    color: #f7f4ef;
+    letter-spacing: -0.3px;
+    margin-bottom: 4px;
+  }
+  .logo span { color: var(--accent); }
+
+  .logo-sub {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: #5a5550;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 2.5rem;
+  }
+
+  .steps-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+
+  .step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    cursor: default;
+    transition: background 0.15s;
+  }
+
+  .step-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #2e2b27;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: #5a5550;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+  }
+
+  .step-item.active .step-num {
+    background: var(--accent);
+    color: #fff;
+  }
+  .step-item.done .step-num {
+    background: var(--green);
+    color: #fff;
+  }
+  .step-item.done .step-num::after { content: '✓'; }
+  .step-item.done .step-num span { display: none; }
+
+  .step-label {
+    font-size: 13px;
+    font-weight: 400;
+    color: #5a5550;
+    transition: color 0.15s;
+    padding-top: 2px;
+  }
+  .step-item.active .step-label { color: #f7f4ef; font-weight: 500; }
+  .step-item.done .step-label { color: #8a857e; }
+
+  .sidebar-footer {
+    border-top: 1px solid #2e2b27;
+    padding-top: 1.5rem;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: #3a3632;
+  }
+
+  /* ── MAIN ── */
+  .main {
+    padding: 3rem 3.5rem;
+    max-width: 800px;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── SECTION HEADERS ── */
+  .section-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .section-title {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 8px;
+    line-height: 1.25;
+  }
+
+  .section-desc {
+    font-size: 14px;
+    color: var(--ink-3);
+    margin-bottom: 2.5rem;
+    max-width: 520px;
+    line-height: 1.7;
+  }
+
+  /* ── FORM ELEMENTS ── */
+  .field { margin-bottom: 1.5rem; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--ink-2);
+    margin-bottom: 8px;
+  }
+
+  input[type="text"],
+  input[type="password"] {
+    width: 100%;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 13px;
+    background: #fff;
+    border: 1.5px solid var(--paper-3);
+    border-radius: var(--radius);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus { border-color: var(--accent); }
+
+  /* ── DROP ZONE ── */
+  .drop-zone {
+    border: 2px dashed var(--paper-3);
+    border-radius: var(--radius-lg);
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fff;
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+  .drop-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .drop-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .drop-zone h3 {
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .drop-zone p {
+    font-size: 12px;
+    color: var(--ink-3);
+    font-family: var(--mono);
+  }
+  .drop-zone.has-file {
+    border-style: solid;
+    border-color: var(--green);
+    background: var(--green-light);
+  }
+  .file-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--green);
+    font-weight: 500;
+    margin-top: 6px;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 24px;
+    border-radius: var(--radius);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-primary:disabled { background: var(--paper-3); color: var(--ink-3); cursor: not-allowed; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-2);
+    border: 1.5px solid var(--paper-3);
+  }
+  .btn-ghost:hover { border-color: var(--ink-3); color: var(--ink); }
+
+  .btn-success {
+    background: var(--green);
+    color: #fff;
+  }
+  .btn-success:hover { background: #1e5030; }
+
+  /* ── PROGRESS PANEL ── */
+  .progress-panel {
+    background: var(--ink);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin-bottom: 2rem;
+    font-family: var(--mono);
+  }
+
+  .progress-panel-title {
+    color: #f7f4ef;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
+  }
+
+  .log-lines { display: flex; flex-direction: column; gap: 4px; }
+
+  .log-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 12px;
+    color: #5a5550;
+    line-height: 1.5;
+    transition: color 0.3s;
+  }
+
+  .log-line.active { color: #d4cfc8; }
+  .log-line.done { color: var(--green); }
+  .log-line.error-line { color: #e05a3a; }
+
+  .log-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #2e2b27;
+    flex-shrink: 0;
+    margin-top: 5px;
+    transition: background 0.3s;
+  }
+  .log-line.active .log-dot { background: var(--accent); animation: pulse 1s infinite; }
+  .log-line.done .log-dot { background: var(--green); }
+  .log-line.error-line .log-dot { background: #e05a3a; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── RESULT CARD ── */
+  .result-card {
+    background: #fff;
+    border: 1.5px solid var(--paper-3);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin-top: 1.5rem;
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.25rem;
+  }
+
+  .result-field {
+    padding: 10px 14px;
+    background: var(--paper);
+    border-radius: var(--radius);
+  }
+
+  .result-field-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--ink-3);
+    margin-bottom: 3px;
+  }
+
+  .result-field-val {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  /* ── ERROR ── */
+  .error-box {
+    background: #fdf0ec;
+    border: 1.5px solid #f0c4b4;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 13px;
+    color: #7a2a10;
+    margin-top: 1rem;
+    font-family: var(--mono);
+    display: none;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* ── SECTION DIVIDER ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--paper-3);
+    margin: 2rem 0;
+  }
+
+  /* ── CONFIG PANEL ── */
+  .config-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 0.5px;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .api-notice {
+    background: var(--paper-2);
+    border-left: 3px solid var(--accent);
+    padding: 12px 14px;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 12px;
+    color: var(--ink-2);
+    margin-bottom: 1.5rem;
+  }
+  .api-notice strong { color: var(--ink); }
+
+  .btn-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+  /* ── JSON PREVIEW ── */
+  .json-preview {
+    background: var(--ink);
+    color: #a8d8a8;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 1.25rem;
+    border-radius: var(--radius);
+    max-height: 280px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-top: 1rem;
+    line-height: 1.7;
+  }
+
+  .toggle-preview {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--accent);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 4px 0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">Resume<span>.</span>Convert</div>
+    <div class="logo-sub">PDF → DOCX Formatter</div>
+
+    <nav class="steps-nav">
+      <div class="step-item active" id="nav-1">
+        <div class="step-num"><span>1</span></div>
+        <div class="step-label">API Key & Setup</div>
+      </div>
+      <div class="step-item" id="nav-2">
+        <div class="step-num"><span>2</span></div>
+        <div class="step-label">Upload Resume PDF</div>
+      </div>
+      <div class="step-item" id="nav-3">
+        <div class="step-num"><span>3</span></div>
+        <div class="step-label">Upload DOCX Template</div>
+      </div>
+      <div class="step-item" id="nav-4">
+        <div class="step-num"><span>4</span></div>
+        <div class="step-label">Extract & Convert</div>
+      </div>
+      <div class="step-item" id="nav-5">
+        <div class="step-num"><span>5</span></div>
+        <div class="step-label">Download Result</div>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      Powered by Claude API<br>
+      claude-sonnet-4-6 · Browser-native
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- PAGE 1: API KEY -->
+    <div class="page active" id="page-1">
+      <div class="section-eyebrow">Step 01</div>
+      <h1 class="section-title">Connect your<br>Claude API key</h1>
+      <p class="section-desc">Your key is used directly in your browser and never sent to any server other than Anthropic's API.</p>
+
+      <div class="api-notice">
+        <strong>Browser-only.</strong> This app runs entirely client-side. Your API key and files stay on your machine.
+      </div>
+
+      <div class="field">
+        <label>Anthropic API Key</label>
+        <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off">
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="goToStep(2)">Continue →</button>
+      </div>
+      <div class="error-box" id="err-1"></div>
+    </div>
+
+    <!-- PAGE 2: PDF UPLOAD -->
+    <div class="page" id="page-2">
+      <div class="section-eyebrow">Step 02</div>
+      <h1 class="section-title">Upload the<br>source resume PDF</h1>
+      <p class="section-desc">Select the candidate's resume as a PDF, Word document, or image (PNG, JPG, TIFF). Text will be extracted automatically.</p>
+
+      <div class="drop-zone" id="drop-pdf" onclick="document.getElementById('file-pdf').click()">
+        <input type="file" id="file-pdf" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.tiff,.tif,.bmp,.webp" onchange="handleFile('pdf', this)">
+        <span class="drop-icon">📄</span>
+        <h3>Drop file here or click to browse</h3>
+        <p>Accepts .pdf, .docx, .png, .jpg, .tiff and more</p>
+        <div class="file-name" id="pdf-name" style="display:none"></div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goToStep(1)">← Back</button>
+        <button class="btn btn-primary" id="btn-2" onclick="goToStep(3)" disabled>Continue →</button>
+      </div>
+      <div class="error-box" id="err-2"></div>
+    </div>
+
+    <!-- PAGE 3: DOCX TEMPLATE -->
+    <div class="page" id="page-3">
+      <div class="section-eyebrow">Step 03</div>
+      <h1 class="section-title">Upload the<br>DOCX template</h1>
+      <p class="section-desc">Provide the branded Word document template. The converter will inject extracted data into its structure.</p>
+
+      <div class="drop-zone" id="drop-docx" onclick="document.getElementById('file-docx').click()">
+        <input type="file" id="file-docx" accept=".docx" onchange="handleFile('docx', this)">
+        <span class="drop-icon">📋</span>
+        <h3>Drop DOCX template here or click to browse</h3>
+        <p>Accepts .docx — must contain the template placeholders</p>
+        <div class="file-name" id="docx-name" style="display:none"></div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="field" style="margin-top:0">
+        <label>Output filename <span class="badge">optional</span></label>
+        <input type="text" id="out-name" placeholder="e.g. John_Smith_Resume.docx">
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goToStep(2)">← Back</button>
+        <button class="btn btn-primary" id="btn-3" onclick="goToStep(4)" disabled>Convert →</button>
+      </div>
+      <div class="error-box" id="err-3"></div>
+    </div>
+
+    <!-- PAGE 4: PROCESSING -->
+    <div class="page" id="page-4">
+      <div class="section-eyebrow">Step 04</div>
+      <h1 class="section-title">Extracting &amp;<br>converting resume</h1>
+      <p class="section-desc">Claude is analysing the PDF and populating your DOCX template. This takes about 15–30 seconds.</p>
+
+      <div class="progress-panel">
+        <div class="progress-panel-title">// Processing log</div>
+        <div class="log-lines" id="log-lines">
+          <div class="log-line" id="log-1"><div class="log-dot"></div><span>Reading PDF text content</span></div>
+          <div class="log-line" id="log-2"><div class="log-dot"></div><span>Sending to Claude claude-sonnet-4-6 for extraction</span></div>
+          <div class="log-line" id="log-3"><div class="log-dot"></div><span>Parsing structured JSON response</span></div>
+          <div class="log-line" id="log-4"><div class="log-dot"></div><span>Unpacking DOCX template</span></div>
+          <div class="log-line" id="log-5"><div class="log-dot"></div><span>Replacing header placeholders</span></div>
+          <div class="log-line" id="log-6"><div class="log-dot"></div><span>Injecting profile summary</span></div>
+          <div class="log-line" id="log-7"><div class="log-dot"></div><span>Building career history section</span></div>
+          <div class="log-line" id="log-8"><div class="log-dot"></div><span>Adding education &amp; skills</span></div>
+          <div class="log-line" id="log-9"><div class="log-dot"></div><span>Repacking final DOCX file</span></div>
+        </div>
+      </div>
+
+      <div class="error-box" id="err-4"></div>
+    </div>
+
+    <!-- PAGE 5: RESULT -->
+    <div class="page" id="page-5">
+      <div class="section-eyebrow">Step 05</div>
+      <h1 class="section-title">Conversion<br>complete ✓</h1>
+      <p class="section-desc">Your formatted resume is ready. Review the extracted details below, then download the DOCX file.</p>
+
+      <div class="result-card" id="result-card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+          <strong id="res-name" style="font-family:var(--serif);font-size:19px;">—</strong>
+          <span id="res-ref" style="font-family:var(--mono);font-size:11px;color:var(--ink-3);">—</span>
+        </div>
+        <div style="font-size:13px;color:var(--ink-2);margin-bottom:1.25rem;" id="res-title-loc">—</div>
+        <div class="result-grid">
+          <div class="result-field">
+            <div class="result-field-label">Career Roles</div>
+            <div class="result-field-val" id="res-jobs">—</div>
+          </div>
+          <div class="result-field">
+            <div class="result-field-label">Education</div>
+            <div class="result-field-val" id="res-edu">—</div>
+          </div>
+          <div class="result-field">
+            <div class="result-field-label">Core Competencies</div>
+            <div class="result-field-val" id="res-skills">—</div>
+          </div>
+          <div class="result-field">
+            <div class="result-field-label">Certifications</div>
+            <div class="result-field-val" id="res-certs">—</div>
+          </div>
+        </div>
+        <div style="margin-top:1rem;">
+          <button class="toggle-preview" onclick="toggleJson()">Show raw JSON ↓</button>
+          <div class="json-preview" id="json-preview" style="display:none"></div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="btn-row">
+        <button class="btn btn-success" id="dl-btn" onclick="downloadDocx()">⬇ Download DOCX</button>
+        <button class="btn btn-ghost" onclick="resetAll()">Convert another →</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────
+const DEFAULT_API_KEY = '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';
+
+const state = {
+  apiKey: DEFAULT_API_KEY,
+  pdfFile: null,
+  docxFile: null,
+  extractedData: null,
+  outputBlob: null,
+  currentStep: 1
+};
+
+const defaultApiKeyInput = document.getElementById('api-key-input');
+if (defaultApiKeyInput && DEFAULT_API_KEY) {
+  defaultApiKeyInput.value = DEFAULT_API_KEY;
+}
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ── NAVIGATION ─────────────────────────────────────────────────────────
+function goToStep(n) {
+  if (n === 2) {
+    const key = document.getElementById('api-key-input').value.trim();
+    if (!key.startsWith('sk-')) {
+      showErr(1, 'Please enter a valid Anthropic API key (starts with sk-).');
+      return;
+    }
+    state.apiKey = key;
+    clearErr(1);
+  }
+  if (n === 4) {
+    clearErr(3);
+    startConversion();
+    return;
+  }
+  activatePage(n);
+}
+
+function activatePage(n) {
+  state.currentStep = n;
+  document.querySelectorAll('.page').forEach((p, i) => {
+    p.classList.toggle('active', i + 1 === n);
+  });
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById('nav-' + i);
+    el.classList.remove('active', 'done');
+    if (i < n) el.classList.add('done');
+    else if (i === n) el.classList.add('active');
+  }
+}
+
+function showErr(step, msg) {
+  const el = document.getElementById('err-' + step);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function clearErr(step) {
+  const el = document.getElementById('err-' + step);
+  if (el) { el.textContent = ''; el.style.display = 'none'; }
+}
+
+// ── FILE HANDLING ───────────────────────────────────────────────────────
+function handleFile(type, input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  if (type === 'pdf') {
+    state.pdfFile = file;
+    document.getElementById('pdf-name').textContent = '✓ ' + file.name;
+    document.getElementById('pdf-name').style.display = 'block';
+    document.getElementById('drop-pdf').classList.add('has-file');
+    document.getElementById('btn-2').disabled = false;
+  } else {
+    state.docxFile = file;
+    document.getElementById('docx-name').textContent = '✓ ' + file.name;
+    document.getElementById('docx-name').style.display = 'block';
+    document.getElementById('drop-docx').classList.add('has-file');
+    document.getElementById('btn-3').disabled = false;
+  }
+}
+
+// drag support
+['drop-pdf', 'drop-docx'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+  el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+  el.addEventListener('drop', e => {
+    e.preventDefault(); el.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const type = id === 'drop-pdf' ? 'pdf' : 'docx';
+    const inputId = type === 'pdf' ? 'file-pdf' : 'file-docx';
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById(inputId).files = dt.files;
+    handleFile(type, { files: [file] });
+  });
+});
+
+// ── FILE TEXT EXTRACTION ────────────────────────────────────────────────
+async function extractResumeText(file) {
+  const name = file.name.toLowerCase();
+  const ext = name.split('.').pop();
+
+  // PDF: use pdf.js
+  if (ext === 'pdf') {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let text = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(item => item.str).join(' ') + '\n';
+    }
+    return { type: 'text', content: text.trim() };
+  }
+
+  // DOCX/DOC: extract raw text from XML inside zip
+  if (ext === 'docx' || ext === 'doc') {
+    const arrayBuffer = await file.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+    const docXml = await zip.file('word/document.xml').async('string');
+    const text = docXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return { type: 'text', content: text };
+  }
+
+  // Images (PNG, JPG, JPEG, TIFF, TIF, BMP, WEBP): send as vision to Claude
+  if (['png','jpg','jpeg','tiff','tif','bmp','webp'].includes(ext)) {
+    const base64 = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result.split(',')[1]);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+    const mimeMap = { png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', tiff:'image/tiff', tif:'image/tiff', bmp:'image/bmp', webp:'image/webp' };
+    return { type: 'image', base64, mediaType: mimeMap[ext] || 'image/jpeg' };
+  }
+
+  throw new Error('Unsupported file type: .' + ext);
+}
+
+// ── CLAUDE API CALL ─────────────────────────────────────────────────────
+async function callClaude(resumeInput) {
+  const jsonSchema = `{
+  "full_name":       "string",
+  "job_title":       "string  (candidate's current/target role)",
+  "location":        "string  (City, State format)",
+  "reference_id":    "string  (generate a random 8-digit ID)",
+  "profile_summary": "string  (full paragraph, preserve original wording)",
+  "career": [
+    {
+      "dates":   "Mon YYYY - Mon YYYY",
+      "company": "Company Name, City, State",
+      "title":   "Job Title",
+      "bullets": ["Full bullet text", "..."]
+    }
+  ],
+  "education": [
+    {
+      "degree":      "Full degree name",
+      "institution": "School name"
+    }
+  ],
+  "additional_sections": [
+    {
+      "heading": "Exact section heading from the PDF (e.g. LANGUAGES, SKILLS, HOBBIES, CERTIFICATIONS, AWARDS, VOLUNTEER WORK, PUBLICATIONS, INTERESTS, etc.)",
+      "items": ["Full item text exactly as written", "..."]
+    }
+  ]
+}`;
+
+  const rules = [
+    'You are extracting resume data into a strict JSON structure.',
+    '',
+    'RULES:',
+    '- "career", "education" and the header fields (full_name, job_title, location, profile_summary) capture those fixed sections.',
+    '- "additional_sections" must capture EVERY other section found in the resume, in the order they appear. This includes (but is not limited to): Languages, Skills, Technical Skills, Hobbies, Interests, Certifications, Awards, Publications, Volunteer Work, Projects, References, Achievements — whatever headings are present in the source document.',
+    '- Use the exact heading text from the PDF (preserve capitalisation).',
+    '- List every item under that heading as a separate string in "items".',
+    '- EXCLUDE personal detail sections (phone, email, address, date of birth, nationality, gender, LinkedIn, photo) — only capture full_name from personal details.',
+    '- Do not invent sections that are not in the source document.',
+    '- Return ONLY a raw JSON object — no markdown, no code fences, no explanation.',
+    '',
+    'Required JSON structure:',
+    jsonSchema
+  ].join('\n');
+
+  let messageContent;
+  if (resumeInput.type === 'image') {
+    messageContent = [
+      { type: 'image', source: { type: 'base64', media_type: resumeInput.mediaType, data: resumeInput.base64 } },
+      { type: 'text', text: rules }
+    ];
+  } else {
+    messageContent = rules + '\n\nResume Text:\n' + resumeInput.content;
+  }
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': state.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4000,
+      temperature: 0,
+      messages: [{ role: 'user', content: messageContent }]
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API error ${response.status}`);
+  }
+
+  const data = await response.json();
+  let raw = data.content[0].text;
+  raw = raw.replace(/```(?:json)?\s*|\s*```/g, '').trim();
+  return JSON.parse(raw);
+}
+
+// ── XML HELPERS ─────────────────────────────────────────────────────────
+function xe(t) {
+  return String(t)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function rxml(xml, old, nw) {
+  return xml.split(`>${xe(old)}<`).join(`>${xe(nw)}<`);
+}
+function sectionHeading(text) {
+  return `    <w:p>
+      <w:pPr>
+        <w:spacing w:after="60" w:line="259" w:lineRule="auto"/>
+        <w:ind w:left="68" w:firstLine="0"/>
+        <w:pBdr>
+          <w:bottom w:val="single" w:sz="4" w:space="1" w:color="000000"/>
+        </w:pBdr>
+      </w:pPr>
+      <w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${xe(text)}</w:t></w:r>
+    </w:p>`;
+}
+function para(text, bold=false, spacingAfter=0, indLeft=68) {
+  const b = bold ? '<w:b/>' : '';
+  return `    <w:p>
+      <w:pPr><w:spacing w:after="${spacingAfter}" w:line="259" w:lineRule="auto"/><w:ind w:left="${indLeft}" w:firstLine="0"/></w:pPr>
+      <w:r><w:rPr>${b}</w:rPr><w:t xml:space="preserve">${xe(text)}</w:t></w:r>
+    </w:p>`;
+}
+function bullet(text) {
+  return `    <w:p>
+      <w:pPr><w:spacing w:after="0" w:line="259" w:lineRule="auto"/><w:ind w:left="576" w:hanging="216"/></w:pPr>
+      <w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="000000"/></w:rPr><w:t xml:space="preserve">&#x25CF;&#x9;</w:t></w:r>
+      <w:r><w:t xml:space="preserve">${xe(text)}</w:t></w:r>
+    </w:p>`;
+}
+function spacer() {
+  return '    <w:p><w:pPr><w:spacing w:after="40" w:line="259" w:lineRule="auto"/></w:pPr></w:p>';
+}
+function buildCareerXml(jobs) {
+  return jobs.map(job => [
+    `    <w:p>
+      <w:pPr>
+        <w:spacing w:after="0" w:line="259" w:lineRule="auto"/>
+        <w:ind w:left="68" w:firstLine="0"/>
+        <w:tabs><w:tab w:val="left" w:pos="1440"/></w:tabs>
+      </w:pPr>
+      <w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${xe(job.dates)}</w:t></w:r>
+      <w:r><w:rPr><w:b/></w:rPr><w:tab/><w:t xml:space="preserve">${xe(job.company)}</w:t></w:r>
+    </w:p>`,
+    `    <w:p>
+      <w:pPr>
+        <w:spacing w:after="0" w:line="259" w:lineRule="auto"/>
+        <w:ind w:left="68" w:firstLine="0"/>
+        <w:tabs><w:tab w:val="left" w:pos="1440"/></w:tabs>
+      </w:pPr>
+      <w:r><w:t xml:space="preserve"> </w:t></w:r>
+      <w:r><w:rPr><w:b/></w:rPr><w:tab/><w:t xml:space="preserve">${xe(job.title)}</w:t></w:r>
+    </w:p>`,
+    ...(job.bullets||[]).map(b => bullet(b)),
+    spacer()
+  ].join('\n')).join('\n');
+}
+function buildEducationXml(list) {
+  return list.map(e => [
+    para(e.degree||'', false, 0),
+    e.institution ? para(e.institution, true, 80) : ''
+  ].join('\n')).join('\n');
+}
+function buildSkillsXml(skills, additionalSections) {
+  // Only render additional sections under the SKILLS heading
+  return (additionalSections || [])
+    .filter(s => (s.items || []).length > 0)
+    .map(s => [
+      para(s.heading || '', true, 0),
+      ...s.items.map(i => bullet(i)),
+      spacer()
+    ].join('\n')).join('\n');
+}
+
+// ── DOCX MANIPULATION ───────────────────────────────────────────────────
+async function buildDocx(data) {
+  const arrayBuffer = await state.docxFile.arrayBuffer();
+  const zip = await JSZip.loadAsync(arrayBuffer);
+
+  // ── HEADER ──
+  const headerFile = zip.file('word/header1.xml');
+  if (headerFile) {
+    let hxml = await headerFile.async('string');
+    const hSubs = [
+      ['Martin Lopez',    data.full_name],
+      ['Safety Manager ', data.job_title + ' '],
+      ['Houston, TX',     data.location],
+      ['10393736',        data.reference_id],
+      ['Job Title',       data.job_title],
+      ['Location:',       data.location + ':'],
+    ];
+    hSubs.forEach(([o,n]) => { hxml = rxml(hxml, o, n); });
+    zip.file('word/header1.xml', hxml);
+  }
+
+  // ── DOCUMENT BODY ──
+  let dxml = await zip.file('word/document.xml').async('string');
+
+  const bodySubs = [
+    ['Martin Lopez',    data.full_name],
+    ['Safety Manager ', data.job_title + ' '],
+    ['Houston, TX',     data.location],
+    ['10393736',        data.reference_id],
+    ['Job Title',       data.job_title],
+  ];
+  bodySubs.forEach(([o,n]) => { dxml = rxml(dxml, o, n); });
+
+  // ── REMOVE ANCHORED DRAWING OBJECTS (gray bar) ──
+  dxml = dxml.replace(/<w:drawing>[\s\S]*?<\/w:drawing>/g, '');
+
+  // ── REMOVE PARAGRAPH BORDER LINES (thin horizontal rules from template) ──
+  dxml = dxml.replace(/<w:pBdr>[\s\S]*?<\/w:pBdr>/g, '');
+
+  // Profile — inject immediately after the PROFILE heading paragraph
+  const profileM = dxml.match(/<w:t>PROFILE<\/w:t>.*?<\/w:p>/s);
+  if (profileM) {
+    const pos = dxml.indexOf(profileM[0]) + profileM[0].length;
+    dxml = dxml.slice(0, pos) + '\n' + para(data.profile_summary) + '\n' + spacer() + dxml.slice(pos);
+  }
+
+  // ── STRIP ALL EXISTING SECTION CONTENT AFTER PROFILE ──
+  // Find the cut point: end of the PROFILE paragraph block, then remove everything
+  // up to (but not including) <w:sectPr so we can rebuild in strict order.
+  // Strategy: locate <w:sectPr and splice out paragraphs between profile area and sectPr.
+
+  // Find where all the mandatory + optional section paragraphs live by locating
+  // the first occurrence of CAREER HISTORY (or EDUCATION / SKILLS if career is absent).
+  const sectionStartPatterns = [
+    /<w:p[^>]*>(?:(?!<w:p[ >])[\s\S])*?<w:t>CAREER HISTORY<\/w:t>[\s\S]*?<\/w:p>/,
+    /<w:p[^>]*>(?:(?!<w:p[ >])[\s\S])*?<w:t[^>]*>EDUCATION\s*<\/w:t>[\s\S]*?<\/w:p>/,
+    /<w:p[^>]*>(?:(?!<w:p[ >])[\s\S])*?<w:t[^>]*>SKILLS\s*<\/w:t>[\s\S]*?<\/w:p>/,
+  ];
+
+  let sectionCutStart = -1;
+  for (const pat of sectionStartPatterns) {
+    const m = dxml.match(pat);
+    if (m) { sectionCutStart = dxml.indexOf(m[0]); break; }
+  }
+
+  const sectPrIdx = dxml.indexOf('<w:sectPr');
+
+  // Build the mandatory sections in fixed order, then any additional sections
+  const mandatoryBlock = [
+    sectionHeading('CAREER HISTORY'),
+    buildCareerXml(data.career || []),
+    sectionHeading('EDUCATION'),
+    buildEducationXml(data.education || []),
+    spacer(),
+    sectionHeading('SKILLS'),
+    buildSkillsXml(data.skills || {}, data.additional_sections || []),
+  ].join('\n') + '\n';
+
+  if (sectionCutStart !== -1 && sectPrIdx !== -1 && sectionCutStart < sectPrIdx) {
+    // Replace everything from the first section heading up to <w:sectPr
+    dxml = dxml.slice(0, sectionCutStart) + mandatoryBlock + dxml.slice(sectPrIdx);
+  } else if (sectPrIdx !== -1) {
+    // No existing section anchors found — insert before <w:sectPr
+    dxml = dxml.slice(0, sectPrIdx) + mandatoryBlock + dxml.slice(sectPrIdx);
+  } else {
+    // Last resort — append before closing body tag
+    dxml = dxml.replace('</w:body>', mandatoryBlock + '</w:body>');
+  }
+
+  zip.file('word/document.xml', dxml);
+
+  return await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+}
+
+// ── LOG HELPERS ─────────────────────────────────────────────────────────
+function setLog(n, state_) {
+  const el = document.getElementById('log-' + n);
+  el.classList.remove('active', 'done', 'error-line');
+  el.classList.add(state_);
+}
+
+// ── MAIN CONVERSION FLOW ────────────────────────────────────────────────
+async function startConversion() {
+  activatePage(4);
+
+  // Reset logs
+  for (let i = 1; i <= 9; i++) {
+    const el = document.getElementById('log-' + i);
+    el.classList.remove('active','done','error-line');
+  }
+  clearErr(4);
+
+  try {
+    // 1. Extract
+    setLog(1, 'active');
+    const resumeInput = await extractResumeText(state.pdfFile);
+    if (resumeInput.type === 'text' && !resumeInput.content) throw new Error('No text found in file. Try a different format.');
+    setLog(1, 'done');
+
+    // 2. Claude
+    setLog(2, 'active');
+    const data = await callClaude(resumeInput);
+    setLog(2, 'done');
+
+    // 3. Parse
+    setLog(3, 'active');
+    if (!data.full_name) throw new Error('Claude did not return expected JSON structure.');
+    state.extractedData = data;
+    setLog(3, 'done');
+
+    // 4. Unpack DOCX
+    setLog(4, 'active');
+    await new Promise(r => setTimeout(r, 300)); // brief visual pause
+    setLog(4, 'done');
+
+    // 5. Header
+    setLog(5, 'active');
+    await new Promise(r => setTimeout(r, 200));
+    setLog(5, 'done');
+
+    // 6. Profile
+    setLog(6, 'active');
+    await new Promise(r => setTimeout(r, 200));
+    setLog(6, 'done');
+
+    // 7. Career
+    setLog(7, 'active');
+    await new Promise(r => setTimeout(r, 200));
+    setLog(7, 'done');
+
+    // 8. Education + skills
+    setLog(8, 'active');
+    const blob = await buildDocx(data);
+    state.outputBlob = blob;
+    setLog(8, 'done');
+
+    // 9. Repack
+    setLog(9, 'active');
+    await new Promise(r => setTimeout(r, 300));
+    setLog(9, 'done');
+
+    // Show result
+    setTimeout(() => showResult(data), 600);
+
+  } catch (e) {
+    // mark last active as error
+    for (let i = 9; i >= 1; i--) {
+      const el = document.getElementById('log-' + i);
+      if (el.classList.contains('active')) { setLog(i, 'error-line'); break; }
+    }
+    showErr(4, 'Error: ' + e.message);
+  }
+}
+
+function showResult(data) {
+  activatePage(5);
+  document.getElementById('res-name').textContent = data.full_name || '—';
+  document.getElementById('res-ref').textContent = 'REF: ' + (data.reference_id || '—');
+  document.getElementById('res-title-loc').textContent = [data.job_title, data.location].filter(Boolean).join(' · ');
+  document.getElementById('res-jobs').textContent = (data.career||[]).length + ' role(s)';
+  document.getElementById('res-edu').textContent = (data.education||[]).length + ' entr' + ((data.education||[]).length === 1 ? 'y' : 'ies');
+  document.getElementById('res-skills').textContent = (data.skills?.core_competencies||[]).length + ' listed';
+  document.getElementById('res-certs').textContent = (data.skills?.certifications||[]).length + ' listed';
+  document.getElementById('json-preview').textContent = JSON.stringify(data, null, 2);
+}
+
+function toggleJson() {
+  const el = document.getElementById('json-preview');
+  const btn = document.querySelector('.toggle-preview');
+  const visible = el.style.display !== 'none';
+  el.style.display = visible ? 'none' : 'block';
+  btn.textContent = visible ? 'Show raw JSON ↓' : 'Hide raw JSON ↑';
+}
+
+function downloadDocx() {
+  if (!state.outputBlob) return;
+  const nameInput = document.getElementById('out-name').value.trim();
+  const defaultName = (state.extractedData?.full_name || 'Resume').replace(/\s+/g, '_') + '.docx';
+  const fileName = nameInput || defaultName;
+  const url = URL.createObjectURL(state.outputBlob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fileName; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function resetAll() {
+  state.pdfFile = null;
+  state.docxFile = null;
+  state.extractedData = null;
+  state.outputBlob = null;
+  ['file-pdf','file-docx'].forEach(id => { document.getElementById(id).value = ''; });
+  ['pdf-name','docx-name'].forEach(id => {
+    const el = document.getElementById(id);
+    el.style.display = 'none'; el.textContent = '';
+  });
+  ['drop-pdf','drop-docx'].forEach(id => document.getElementById(id).classList.remove('has-file'));
+  document.getElementById('btn-2').disabled = true;
+  document.getElementById('btn-3').disabled = true;
+  document.getElementById('out-name').value = '';
+  goToStep(2);
+}
+</script>
+</body>
+</html>

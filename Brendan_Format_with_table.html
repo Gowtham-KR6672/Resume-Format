@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resume.Convert — PDF → DOCX</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d0d;
+  --surface: #161616;
+  --surface2: #1e1e1e;
+  --border: #2a2a2a;
+  --border2: #333;
+  --ink: #f0ede8;
+  --muted: #666;
+  --muted2: #444;
+  --accent: #e8c547;
+  --accent-dim: rgba(232,197,71,0.10);
+  --accent-glow: rgba(232,197,71,0.05);
+  --green: #4ade80;
+  --green-dim: rgba(74,222,128,0.09);
+  --red: #f87171;
+  --sidebar: 268px;
+  --radius: 10px;
+}
+
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  overflow-x: hidden;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: var(--sidebar);
+  min-height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  position: fixed; top: 0; left: 0;
+  display: flex; flex-direction: column;
+  padding: 36px 0 40px;
+}
+.brand {
+  padding: 0 26px 28px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+.brand-name {
+  font-family: 'Instrument Serif', serif;
+  font-size: 21px;
+  color: var(--ink);
+}
+.brand-accent { color: var(--accent); }
+.brand-sub {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+.steps-nav {
+  display: flex; flex-direction: column;
+  padding: 0 14px;
+}
+.step-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: default;
+  transition: background 0.15s;
+}
+.step-item.clickable { cursor: pointer; }
+.step-item.clickable:hover { background: var(--surface2); }
+.step-item.active { background: var(--accent-dim); }
+.step-num {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10.5px; font-weight: 700;
+  flex-shrink: 0;
+  background: var(--surface2);
+  color: var(--muted);
+  border: 1px solid var(--border2);
+  transition: all 0.2s;
+  font-family: 'JetBrains Mono', monospace;
+}
+.step-item.active .step-num {
+  background: var(--accent); color: #000;
+  border-color: var(--accent);
+  box-shadow: 0 0 14px rgba(232,197,71,0.3);
+}
+.step-item.done .step-num {
+  background: var(--green-dim); color: var(--green);
+  border-color: rgba(74,222,128,0.3);
+}
+.step-label {
+  font-size: 12.5px; font-weight: 500; color: var(--muted);
+  transition: color 0.15s;
+}
+.step-item.active .step-label { color: var(--ink); }
+.step-item.done .step-label { color: #505050; }
+.step-connector {
+  width: 1px; height: 14px;
+  background: var(--border2);
+  margin: 0 0 0 27px;
+}
+
+/* ── Main ── */
+.main {
+  margin-left: var(--sidebar);
+  flex: 1; min-height: 100vh;
+  padding: 68px 76px;
+  max-width: calc(100vw - var(--sidebar));
+}
+.step-panel {
+  display: none; max-width: 560px;
+  animation: fadeUp 0.24s ease;
+}
+.step-panel.active { display: block; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(9px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.step-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px; font-weight: 500;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 14px;
+  display: flex; align-items: center; gap: 9px;
+}
+.step-eyebrow::before {
+  content: ''; display: inline-block;
+  width: 18px; height: 1px; background: var(--accent);
+}
+.step-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 50px; line-height: 1.08;
+  color: var(--ink); margin-bottom: 16px;
+  letter-spacing: -0.5px;
+}
+.step-title em { font-style: italic; color: var(--accent); }
+.step-desc {
+  font-size: 14px; color: var(--muted);
+  line-height: 1.7; margin-bottom: 38px;
+  max-width: 420px;
+}
+
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 13px 18px;
+  font-size: 13px; color: #777;
+  margin-bottom: 30px; line-height: 1.6;
+}
+.info-box strong { color: var(--ink); }
+
+.field-label {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px; font-weight: 500;
+  letter-spacing: 0.17em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
+}
+.input-wrap { position: relative; }
+.input-field {
+  width: 100%; padding: 14px 46px 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border2); border-radius: var(--radius);
+  font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  color: var(--ink); outline: none;
+  transition: border 0.15s, box-shadow 0.15s;
+}
+.input-field::placeholder { color: var(--muted2); }
+.input-field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.vis-btn {
+  position: absolute; right: 14px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none;
+  cursor: pointer; font-size: 14px; color: var(--muted); padding: 0;
+}
+.input-hint {
+  font-size: 11px; color: var(--muted2); margin-top: 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.cta-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 13px 28px; background: var(--accent); color: #000;
+  border: none; border-radius: 8px;
+  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+  margin-top: 30px; letter-spacing: 0.03em;
+}
+.cta-btn:hover:not(:disabled) {
+  background: #f0cf5a; transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(232,197,71,0.22);
+}
+.cta-btn:disabled { opacity: 0.28; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.drop-zone {
+  border: 1px dashed var(--border2); border-radius: var(--radius);
+  padding: 46px 32px; text-align: center; cursor: pointer;
+  transition: all 0.2s; background: var(--surface);
+  position: relative; margin-bottom: 12px;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--accent); background: var(--accent-glow);
+}
+.drop-zone input {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  width: 100%; height: 100%;
+}
+.drop-icon { font-size: 30px; margin-bottom: 13px; display: block; }
+.drop-zone h3 {
+  font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 600;
+  color: var(--ink); margin-bottom: 6px;
+}
+.drop-zone p { font-size: 12.5px; color: var(--muted); }
+
+.file-pill {
+  display: none; align-items: center; gap: 12px;
+  background: var(--green-dim); border: 1px solid rgba(74,222,128,0.18);
+  border-radius: 8px; padding: 11px 16px; margin-bottom: 4px;
+}
+.file-pill.show { display: flex; }
+.pill-name { font-size: 13px; font-weight: 600; color: var(--green); }
+.pill-size { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.pill-rm {
+  margin-left: auto; background: none; border: none;
+  font-size: 15px; color: var(--muted); cursor: pointer;
+}
+.pill-rm:hover { color: var(--red); }
+
+.progress-wrap { margin-top: 32px; display: none; }
+.progress-track {
+  height: 2px; background: var(--border2); border-radius: 2px;
+  overflow: hidden; margin-bottom: 22px;
+}
+.progress-fill {
+  height: 100%; background: var(--accent); border-radius: 2px;
+  transition: width 0.5s ease; width: 0%;
+  box-shadow: 0 0 10px var(--accent);
+}
+.log-console {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 15px 18px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  color: #555; max-height: 230px; overflow-y: auto; line-height: 1.85;
+  scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+}
+.log-line { display: flex; gap: 10px; }
+.log-ts { color: var(--muted2); flex-shrink: 0; }
+.log-line.ok .log-msg { color: var(--green); }
+.log-line.err .log-msg { color: var(--red); }
+.log-line.info .log-msg { color: #7ab8e8; }
+
+.preview-toggle {
+  display: none; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--muted); cursor: pointer;
+  margin-top: 13px; background: none; border: none;
+  padding: 0; font-family: 'Syne', sans-serif; transition: color 0.15s;
+}
+.preview-toggle.show { display: inline-flex; }
+.preview-toggle:hover { color: var(--ink); }
+.preview-box {
+  display: none; margin-top: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 13px 16px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #666;
+  max-height: 200px; overflow-y: auto; white-space: pre-wrap; line-height: 1.7;
+  scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+}
+.preview-box.show { display: block; }
+
+.success-card {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 12px; padding: 48px 40px; text-align: center;
+  position: relative; overflow: hidden;
+}
+.success-card::before {
+  content: ''; position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(74,222,128,0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+.success-icon { font-size: 50px; margin-bottom: 18px; display: block; }
+.success-card h3 {
+  font-family: 'Instrument Serif', serif; font-size: 26px;
+  margin-bottom: 10px; color: var(--ink);
+}
+.success-card p { font-size: 13px; color: var(--muted); margin-bottom: 30px; line-height: 1.6; }
+.dl-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 32px; background: var(--green); color: #000;
+  border: none; border-radius: 8px;
+  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.dl-btn:hover { background: #6ef09a; transform: translateY(-1px); box-shadow: 0 8px 22px rgba(74,222,128,0.22); }
+
+.back-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; color: var(--muted); cursor: pointer;
+  margin-bottom: 26px; background: none; border: none;
+  padding: 0; font-family: 'Syne', sans-serif; transition: color 0.15s;
+  text-transform: uppercase; letter-spacing: 0.09em; font-weight: 600;
+}
+.back-link:hover { color: var(--ink); }
+.divider { border: none; border-top: 1px solid var(--border); margin: 34px 0; }
+
+.badge-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.badge {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  padding: 4px 10px; border-radius: 4px; font-weight: 500;
+}
+.badge-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(74,222,128,0.2); }
+.badge-blue { background: rgba(122,184,232,0.09); color: #7ab8e8; border: 1px solid rgba(122,184,232,0.2); }
+.badge-yellow { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(232,197,71,0.2); }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-name">Resume<span class="brand-accent">.</span>Convert</div>
+    <div class="brand-sub">PDF → DOCX Formatter</div>
+  </div>
+  <nav class="steps-nav">
+    <div class="step-item active" data-step="1">
+      <div class="step-num">01</div>
+      <span class="step-label">API Key Setup</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-item" data-step="2">
+      <div class="step-num">02</div>
+      <span class="step-label">Upload Resume PDF</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-item" data-step="3">
+      <div class="step-num">03</div>
+      <span class="step-label">Upload Template</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-item" data-step="4">
+      <div class="step-num">04</div>
+      <span class="step-label">Extract &amp; Convert</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-item" data-step="5">
+      <div class="step-num">05</div>
+      <span class="step-label">Download</span>
+    </div>
+  </nav>
+</aside>
+
+<main class="main">
+
+  <!-- Step 1: API Key -->
+  <div class="step-panel active" id="panel-1">
+    <div class="step-eyebrow">Step 01</div>
+    <h1 class="step-title">Connect your<br><em>API key</em></h1>
+    <p class="step-desc">Your key is used directly in your browser — never stored, never sent anywhere except Anthropic's API.</p>
+    <div class="info-box">
+      <strong>100% browser-based.</strong> Your key and files stay on your machine. Processing is done locally + Claude API only.
+    </div>
+    <label class="field-label" for="api-key">Anthropic API Key</label>
+    <div class="input-wrap">
+      <input class="input-field" type="password" id="api-key" placeholder="sk-ant-api03-…" autocomplete="off" />
+      <button class="vis-btn" id="toggle-vis">👁</button>
+    </div>
+    <div class="input-hint">→ console.anthropic.com / API Keys</div>
+    <button class="cta-btn" id="btn-1" disabled>Continue →</button>
+  </div>
+
+  <!-- Step 2: PDF -->
+  <div class="step-panel" id="panel-2">
+    <button class="back-link" onclick="goTo(1)">← Back</button>
+    <div class="step-eyebrow">Step 02</div>
+    <h1 class="step-title">Upload<br><em>Resume PDF</em></h1>
+    <p class="step-desc">Upload the candidate's CV as a PDF. Text is extracted locally in your browser before going to Claude.</p>
+    <div class="drop-zone" id="dz-pdf">
+      <input type="file" id="input-pdf" accept=".pdf" />
+      <span class="drop-icon">📄</span>
+      <h3>Drop PDF here or click to browse</h3>
+      <p>Accepts .pdf · processed locally</p>
+    </div>
+    <div class="file-pill" id="pill-pdf">
+      <span style="font-size:19px">✅</span>
+      <div><div class="pill-name" id="pdf-name">—</div><div class="pill-size" id="pdf-size">—</div></div>
+      <button class="pill-rm" id="rm-pdf">✕</button>
+    </div>
+    <button class="cta-btn" id="btn-2" disabled>Continue →</button>
+  </div>
+
+  <!-- Step 3: Template -->
+  <div class="step-panel" id="panel-3">
+    <button class="back-link" onclick="goTo(2)">← Back</button>
+    <div class="step-eyebrow">Step 03</div>
+    <h1 class="step-title">Upload<br><em>DOCX Template</em></h1>
+    <p class="step-desc">Upload your .docx template. Claude reads its structure and the output will inherit the template's <strong style="color:var(--ink)">headers, footers, styles, and page layout</strong> exactly.</p>
+    <div class="info-box">
+      <strong>Template inheritance.</strong> Headers, footers, page margins, fonts, and styles are all preserved from your template file — only the body content is replaced with the extracted resume data.
+    </div>
+    <div class="drop-zone" id="dz-tpl">
+      <input type="file" id="input-tpl" accept=".docx" />
+      <span class="drop-icon">📋</span>
+      <h3>Drop .docx template here or click to browse</h3>
+      <p>Accepts .docx files · headers &amp; footers preserved</p>
+    </div>
+    <div class="file-pill" id="pill-tpl">
+      <span style="font-size:19px">✅</span>
+      <div>
+        <div class="pill-name" id="tpl-name">—</div>
+        <div class="pill-size" id="tpl-size">—</div>
+        <div class="badge-row" id="tpl-badges" style="display:none">
+          <span class="badge badge-green" id="badge-header" style="display:none">✓ Header</span>
+          <span class="badge badge-blue" id="badge-footer" style="display:none">✓ Footer</span>
+          <span class="badge badge-yellow" id="badge-styles">✓ Styles</span>
+        </div>
+      </div>
+      <button class="pill-rm" id="rm-tpl">✕</button>
+    </div>
+    <button class="cta-btn" id="btn-3" disabled>Continue →</button>
+  </div>
+
+  <!-- Step 4: Process -->
+  <div class="step-panel" id="panel-4">
+    <div class="step-eyebrow">Step 04</div>
+    <h1 class="step-title">Extract<br><em>&amp; Convert</em></h1>
+    <p class="step-desc">Claude extracts all resume content and rebuilds it inside your template — keeping every header, footer, and style intact.</p>
+    <button class="cta-btn" id="btn-4">
+      <span id="btn4-icon">⚡</span>
+      <span id="btn4-label">Start Processing</span>
+    </button>
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="log-console" id="log-console"></div>
+      <button class="preview-toggle" id="preview-toggle">▾ Show extracted data</button>
+      <div class="preview-box" id="preview-box"></div>
+    </div>
+  </div>
+
+  <!-- Step 5: Download -->
+  <div class="step-panel" id="panel-5">
+    <div class="step-eyebrow">Step 05</div>
+    <h1 class="step-title">Your file<br><em>is ready</em></h1>
+    <p class="step-desc">The resume has been extracted and reformatted — with your template's headers and footers preserved.</p>
+    <div class="success-card">
+      <span class="success-icon">📋</span>
+      <h3 id="dl-name">Formatted Resume</h3>
+      <p>All sections extracted · Template applied · Headers &amp; footers preserved · Ready to open in Word</p>
+      <button class="dl-btn" id="download-btn">⬇ &nbsp;Download .docx</button>
+    </div>
+    <hr class="divider">
+    <button class="back-link" onclick="resetApp()">↺ &nbsp;Format another resume</button>
+  </div>
+
+</main>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let currentStep = 1;
+let pdfFile = null, tplFile = null;
+let generatedBlob = null, extractedData = null;
+let processing = false;
+// Stores raw XML parts extracted from the template DOCX
+let templateParts = null;
+
+// ── Navigation ──
+function goTo(n) {
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + n).classList.add('active');
+  document.querySelectorAll('.step-item').forEach(el => {
+    const s = +el.dataset.step;
+    el.classList.remove('active','done','clickable');
+    if (s === n) {
+      el.classList.add('active');
+      el.querySelector('.step-num').textContent = ('0'+s).slice(-2);
+    } else if (s < n) {
+      el.classList.add('done','clickable');
+      el.querySelector('.step-num').textContent = '✓';
+    } else {
+      el.querySelector('.step-num').textContent = ('0'+s).slice(-2);
+    }
+  });
+  currentStep = n;
+}
+document.querySelectorAll('.step-item').forEach(el => {
+  el.addEventListener('click', () => { if (+el.dataset.step < currentStep) goTo(+el.dataset.step); });
+});
+
+function resetApp() {
+  pdfFile = null; tplFile = null; generatedBlob = null; extractedData = null;
+  processing = false; templateParts = null;
+  ['input-pdf','input-tpl'].forEach(id => document.getElementById(id).value = '');
+  ['pill-pdf','pill-tpl'].forEach(id => document.getElementById(id).classList.remove('show'));
+  document.getElementById('tpl-badges').style.display = 'none';
+  document.getElementById('btn-2').disabled = true;
+  document.getElementById('btn-3').disabled = true;
+  document.getElementById('log-console').innerHTML = '';
+  document.getElementById('progress-fill').style.width = '0%';
+  document.getElementById('progress-wrap').style.display = 'none';
+  document.getElementById('preview-toggle').classList.remove('show');
+  document.getElementById('preview-box').classList.remove('show');
+  document.getElementById('btn4-icon').textContent = '⚡';
+  document.getElementById('btn4-label').textContent = 'Start Processing';
+  document.getElementById('btn-4').disabled = false;
+  goTo(1);
+}
+
+// ── Step 1 ──
+const DEFAULT_API_KEY = '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';
+const apiInput = document.getElementById('api-key');
+const btn1 = document.getElementById('btn-1');
+const toggleVis = document.getElementById('toggle-vis');
+if (DEFAULT_API_KEY) {
+  apiInput.value = DEFAULT_API_KEY;
+  btn1.disabled = !apiInput.value.trim().startsWith('sk-');
+}
+if (toggleVis) toggleVis.style.display = 'none';
+apiInput.addEventListener('input', () => { btn1.disabled = !apiInput.value.trim().startsWith('sk-'); });
+toggleVis.addEventListener('click', () => {
+  apiInput.type = apiInput.type === 'password' ? 'text' : 'password';
+});
+btn1.addEventListener('click', () => goTo(2));
+
+// ── Dropzones ──
+function setupDropzone(dzId, inputId, pillId, nameId, sizeId, rmId, btnId, accept) {
+  const dz = document.getElementById(dzId);
+  const input = document.getElementById(inputId);
+  const pill = document.getElementById(pillId);
+  const btn = document.getElementById(btnId);
+
+  async function handle(file) {
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    if (!accept.includes(ext)) { alert('Please upload a ' + accept.join(' or ') + ' file.'); return; }
+
+    if (dzId === 'dz-pdf') {
+      pdfFile = file;
+    } else {
+      tplFile = file;
+      // Immediately extract template parts so we can show badges & use later
+      try {
+        templateParts = await extractTemplateParts(file);
+        const badgesEl = document.getElementById('tpl-badges');
+        badgesEl.style.display = 'flex';
+        document.getElementById('badge-header').style.display = templateParts.hasHeader ? 'inline-flex' : 'none';
+        document.getElementById('badge-footer').style.display = templateParts.hasFooter ? 'inline-flex' : 'none';
+      } catch(e) {
+        console.warn('Template parse warning:', e);
+        templateParts = null;
+      }
+    }
+
+    document.getElementById(nameId).textContent = file.name;
+    document.getElementById(sizeId).textContent = (file.size / 1024).toFixed(1) + ' KB';
+    pill.classList.add('show');
+    btn.disabled = false;
+  }
+
+  input.addEventListener('change', e => { if (e.target.files[0]) handle(e.target.files[0]); });
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) handle(e.dataTransfer.files[0]);
+  });
+  document.getElementById(rmId).addEventListener('click', () => {
+    if (dzId === 'dz-pdf') { pdfFile = null; }
+    else { tplFile = null; templateParts = null; document.getElementById('tpl-badges').style.display = 'none'; }
+    input.value = ''; pill.classList.remove('show'); btn.disabled = true;
+  });
+}
+setupDropzone('dz-pdf','input-pdf','pill-pdf','pdf-name','pdf-size','rm-pdf','btn-2',['.pdf']);
+setupDropzone('dz-tpl','input-tpl','pill-tpl','tpl-name','tpl-size','rm-tpl','btn-3',['.docx']);
+document.getElementById('btn-2').addEventListener('click', () => goTo(3));
+document.getElementById('btn-3').addEventListener('click', () => goTo(4));
+
+// ══════════════════════════════════════════════════════════════════
+//  TEMPLATE EXTRACTION
+//  Uses JSZip to unpack the .docx (it's just a ZIP) and grab all
+//  the XML part files: header1.xml, footer1.xml, styles.xml, etc.
+//  These are later injected back into the generated document.
+// ══════════════════════════════════════════════════════════════════
+async function extractTemplateParts(file) {
+  const ab = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(ab);
+
+  const parts = {
+    hasHeader: false,
+    hasFooter: false,
+    files: {},          // filename → Uint8Array of raw bytes
+    relationships: [],  // parsed _rels entries
+    contentTypes: '',   // [Content_Types].xml raw string
+  };
+
+  // Grab every file in the ZIP
+  for (const [path, zipEntry] of Object.entries(zip.files)) {
+    if (!zipEntry.dir) {
+      parts.files[path] = await zipEntry.async('uint8array');
+    }
+  }
+
+  // Check for header/footer XML files
+  for (const path of Object.keys(parts.files)) {
+    if (/word\/header\d*\.xml$/i.test(path)) parts.hasHeader = true;
+    if (/word\/footer\d*\.xml$/i.test(path)) parts.hasFooter = true;
+  }
+
+  // Read [Content_Types].xml as text (needed for rebuilding)
+  if (parts.files['[Content_Types].xml']) {
+    parts.contentTypes = new TextDecoder().decode(parts.files['[Content_Types].xml']);
+  }
+
+  return parts;
+}
+
+// ── Processing ──
+function logMsg(msg, type = 'info') {
+  const c = document.getElementById('log-console');
+  const ts = new Date().toLocaleTimeString('en-GB', { hour12: false });
+  const div = document.createElement('div');
+  div.className = 'log-line ' + type;
+  div.innerHTML = `<span class="log-ts">[${ts}]</span><span class="log-msg">${msg}</span>`;
+  c.appendChild(div); c.scrollTop = c.scrollHeight;
+}
+function setProgress(p) { document.getElementById('progress-fill').style.width = p + '%'; }
+
+async function extractPdfText(file) {
+  const ab = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const ct = await page.getTextContent();
+    text += ct.items.map(x => x.str).join(' ') + '\n\n';
+  }
+  return text;
+}
+
+async function callClaude(system, user, maxTokens = 4000) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiInput.value.trim(),
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5',
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: 'user', content: user }]
+    })
+  });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || 'HTTP ' + res.status); }
+  return (await res.json()).content[0].text;
+}
+
+document.getElementById('btn-4').addEventListener('click', startProcessing);
+
+async function startProcessing() {
+  if (processing) return;
+  processing = true;
+  const btn4 = document.getElementById('btn-4');
+  btn4.disabled = true;
+  document.getElementById('btn4-icon').textContent = '⏳';
+  document.getElementById('btn4-label').textContent = 'Processing…';
+  document.getElementById('progress-wrap').style.display = 'block';
+  setProgress(0);
+
+  try {
+    // Step A: Extract PDF text
+    logMsg('Extracting text from PDF…');
+    const resumeText = await extractPdfText(pdfFile);
+    logMsg(`PDF extracted — ${resumeText.length.toLocaleString()} characters`, 'ok');
+    setProgress(12);
+
+    // Step B: Re-extract template if not yet done (failsafe)
+    if (!templateParts && tplFile) {
+      logMsg('Parsing template ZIP…');
+      templateParts = await extractTemplateParts(tplFile);
+    }
+    logMsg(`Template parsed — header: ${templateParts?.hasHeader ? 'yes' : 'no'}, footer: ${templateParts?.hasFooter ? 'yes' : 'no'}`, 'ok');
+    setProgress(24);
+
+    // Step C: Claude extracts structured data from PDF text
+    logMsg('Parsing resume with Claude…');
+    const sys = `You are a professional resume parser. Extract ALL information from the CV text provided and return ONLY a valid JSON object with no markdown fences, no preamble, no explanation.
+
+Use this exact JSON schema:
+{
+  "name": "Full Name",
+  "job_title": "Current Job Title",
+  "location": "City, Country",
+  "email": "email address or empty string",
+  "phone": "phone number or empty string",
+  "linkedin": "LinkedIn URL or empty string",
+  "profile_summary": "Complete profile/summary paragraph verbatim",
+  "skills": [
+    { "category": "Category Name", "items": ["skill1", "skill2"] }
+  ],
+  "career_history": [
+    {
+      "dates": "YYYY - YYYY or YYYY - Present",
+      "company": "Company Name",
+      "division": "Division/Segment/Sub-unit (empty string if none)",
+      "title": "Job Title",
+      "bullets": ["Achievement or responsibility 1", "Achievement 2"]
+    }
+  ],
+  "education": [
+    {
+      "degree": "Degree or Qualification Name",
+      "institution": "Institution Name",
+      "details": ["Additional detail lines"]
+    }
+  ],
+  "languages": [
+    { "language": "Language name", "level": "Proficiency level or description" }
+  ],
+  "interests": ["Interest 1", "Interest 2"]
+}
+
+IMPORTANT:
+- Preserve ALL bullet points exactly as written
+- Keep career history in chronological order (most recent first)
+- Extract every skill category and all items within it
+- Return ONLY the JSON object, nothing else`;
+
+    const rawJson = await callClaude(sys, resumeText, 6000);
+    logMsg('Claude extraction complete', 'ok');
+    setProgress(55);
+
+    let data;
+    try { data = JSON.parse(rawJson.replace(/^```json\s*|^```\s*|```\s*$/gm, '').trim()); }
+    catch (e) { throw new Error('JSON parse error: ' + e.message); }
+    extractedData = data;
+
+    const prevBox = document.getElementById('preview-box');
+    const prevToggle = document.getElementById('preview-toggle');
+    prevBox.textContent = JSON.stringify(data, null, 2);
+    prevToggle.classList.add('show');
+    let prevOpen = false;
+    prevToggle.onclick = () => {
+      prevOpen = !prevOpen;
+      prevBox.classList.toggle('show', prevOpen);
+      prevToggle.textContent = prevOpen ? '▴ Hide extracted data' : '▾ Show extracted data';
+    };
+
+    // Step D: Build body XML, then inject into template ZIP
+    logMsg('Building body XML…');
+    const numId = detectTemplateNumId(templateParts);
+    logMsg(`Using bullet numId: ${numId} from template`, 'info');
+    const bodyXml = buildBodyXml(data, numId);
+    setProgress(72);
+
+    logMsg('Injecting into template (preserving headers/footers)…');
+    generatedBlob = await injectBodyIntoTemplate(templateParts, bodyXml, data);
+    logMsg('DOCX assembled with template header/footer', 'ok');
+    setProgress(100);
+    logMsg('✓ Ready to download', 'ok');
+
+    setTimeout(() => {
+      document.getElementById('dl-name').textContent = (data.name || 'Candidate') + ' — Formatted Resume';
+      goTo(5);
+    }, 650);
+
+  } catch (err) {
+    logMsg('Error: ' + err.message, 'err');
+    console.error(err);
+    btn4.disabled = false;
+    document.getElementById('btn4-icon').textContent = '⚡';
+    document.getElementById('btn4-label').textContent = 'Retry';
+    processing = false;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  BODY XML BUILDER — matches Enrico_Vignali_Fixed.docx exactly
+//  Uses ListParagraph style + template's own numbering (numId from template)
+//  Section headers: centered, bold, Arial, sz=20, spacing before=211
+//  Career rows: tab-indent layout with line break between company and title
+//  Bullets: ListParagraph style, numId resolved from template numbering.xml
+// ══════════════════════════════════════════════════════════════════
+function esc(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Detect the highest existing numId in the template's numbering.xml so we don't clash
+function detectTemplateNumId(parts) {
+  if (!parts || !parts.files['word/numbering.xml']) return 5;
+  try {
+    const xml = new TextDecoder().decode(parts.files['word/numbering.xml']);
+    const matches = [...xml.matchAll(/w:numId w:val="(\d+)"/g)];
+    const ids = matches.map(m => parseInt(m[1])).filter(n => n > 0);
+    return ids.length ? Math.max(...ids) : 5;
+  } catch(e) { return 5; }
+}
+
+function rpr(opts = {}) {
+  const bold = opts.bold ? '<w:b/><w:bCs/>' : '';
+  const italic = opts.italic ? '<w:i/><w:iCs/>' : '';
+  const sz = opts.sz || 20;
+  const spacing = opts.spacing !== undefined ? `<w:spacing w:val="${opts.spacing}"/>` : '';
+  return `<w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>${bold}${italic}${spacing}<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr>`;
+}
+
+function r(text, opts = {}) {
+  return `<w:r>${rpr(opts)}<w:t xml:space="preserve">${esc(text)}</w:t></w:r>`;
+}
+
+function rBr(opts = {}) {
+  return `<w:r>${rpr(opts)}<w:br/></w:r>`;
+}
+
+// Section header: bold, Arial 10pt, spacing before 211, centered — matches fixed doc exactly
+function sectionHeader(title) {
+  return `<w:p><w:pPr><w:spacing w:before="211"/><w:ind w:left="141"/><w:jc w:val="center"/><w:rPr><w:rFonts w:ascii="Arial"/><w:b/><w:sz w:val="20"/></w:rPr></w:pPr>${r(title, {bold:true, sz:20, spacing:-2})}</w:p>`;
+}
+
+// Bullet paragraph using ListParagraph style and template numId
+function bullet(text, numId) {
+  return `<w:p><w:pPr><w:pStyle w:val="ListParagraph"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="${numId}"/></w:numPr><w:rPr><w:rFonts w:ascii="Arial"/><w:sz w:val="20"/></w:rPr></w:pPr>${r(text, {sz:20})}</w:p>`;
+}
+
+// Normal bold paragraph (degree name, skill category, etc.)
+function boldPara(text, opts = {}) {
+  const before = opts.before !== undefined ? opts.before : 0;
+  const spacingXml = before ? `<w:spacing w:before="${before}"/>` : '';
+  const tabsXml = opts.tabs ? `<w:tabs><w:tab w:val="left" w:pos="874"/></w:tabs>` : '';
+  return `<w:p><w:pPr>${tabsXml}${spacingXml}<w:rPr><w:rFonts w:ascii="Arial"/><w:b/><w:sz w:val="20"/></w:rPr></w:pPr>${r(text, {bold:true, sz:20, spacing:-2})}</w:p>`;
+}
+
+// Normal plain paragraph (institution name, profile text)
+function plainPara(text, opts = {}) {
+  const before = opts.before !== undefined ? opts.before : 0;
+  const spacingXml = before ? `<w:spacing w:before="${before}"/>` : '';
+  return `<w:p><w:pPr>${spacingXml}<w:rPr><w:rFonts w:ascii="Arial"/><w:sz w:val="20"/></w:rPr></w:pPr>${r(text, {sz:20})}</w:p>`;
+}
+
+// Career history row: dates[TAB]Company\nTitle — matches fixed doc tab+linebreak structure
+function careerPara(job, before) {
+  const beforeXml = before ? `<w:spacing w:before="${before}"/>` : '';
+  const divisionBr = job.division
+    ? rBr({bold:true, sz:20}) + r(job.division, {bold:true, sz:20}) + rBr({bold:true, sz:20})
+    : rBr({bold:true, sz:20});
+  return `<w:p><w:pPr><w:tabs><w:tab w:val="left" w:pos="2160"/></w:tabs>${beforeXml}<w:ind w:left="2160" w:hanging="2160"/><w:rPr><w:rFonts w:ascii="Arial"/><w:sz w:val="20"/></w:rPr></w:pPr>${r(job.dates||'', {bold:true, sz:20})}<w:r>${rpr({bold:true,sz:20})}<w:tab/></w:r>${r(job.company||'', {bold:true, sz:20})}${divisionBr}${r(job.title||'', {bold:true, sz:20})}</w:p>`;
+}
+
+function buildBodyXml(d, numId) {
+  const BID = numId || 5; // bullet numId — from template or fallback
+
+  let body = '';
+
+  // ── Lead paragraph (empty, matches template) ──
+  body += `<w:p><w:pPr><w:rPr><w:rFonts w:ascii="Arial"/><w:b/><w:spacing w:val="-2"/><w:sz w:val="20"/></w:rPr></w:pPr></w:p>`;
+
+  // ── Candidate Profile Table — exact template XML, verbatim ──
+  // Injected directly from Brendan_Format.docx with only name/location substituted
+  const tblTemplate = '<w:tbl><w:tblPr><w:tblW w:w="10849" w:type="dxa"/><w:tblInd w:w="-5" w:type="dxa"/><w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr><w:tblGrid><w:gridCol w:w="2520"/><w:gridCol w:w="3420"/><w:gridCol w:w="1710"/><w:gridCol w:w="3199"/></w:tblGrid><w:tr><w:trPr><w:trHeight w:val="605"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:tcBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:sz w:val="28"/><w:szCs w:val="28"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:sz w:val="28"/><w:szCs w:val="28"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>Candidate Profile</w:t></w:r></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="2520" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t xml:space="preserve">Candidate: </w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3420" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:bCs/><w:color w:val="000000"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/></w:rPr><w:t>{{NAME}}</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="1710" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>Client:</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3199" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>\xa0</w:t></w:r></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="2520" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t xml:space="preserve">Package details: </w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3420" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>\xa0</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="1710" w:type="dxa"/><w:vMerge w:val="restart"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t xml:space="preserve">Location: </w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3199" w:type="dxa"/><w:vMerge w:val="restart"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/></w:rPr><w:t>{{LOCATION}}</w:t></w:r></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="2520" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>Basic:</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3420" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="1710" w:type="dxa"/><w:vMerge/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3199" w:type="dxa"/><w:vMerge/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="2520" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>Bonus:</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3420" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>\xa0</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="1710" w:type="dxa"/><w:vMerge/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3199" w:type="dxa"/><w:vMerge/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="2520" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>Car/Allowance:</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3420" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>\xa0</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="1710" w:type="dxa"/><w:vMerge w:val="restart"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>Willing to relocate?</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3199" w:type="dxa"/><w:vMerge w:val="restart"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>\xa0</w:t></w:r></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="2520" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>Pension:</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3420" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>\xa0</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="1710" w:type="dxa"/><w:vMerge/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3199" w:type="dxa"/><w:vMerge/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="2520" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>Healthcare:</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3420" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>\xa0</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="1710" w:type="dxa"/><w:vMerge/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3199" w:type="dxa"/><w:vMerge/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="2520" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>Holidays:</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3420" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>\xa0</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="1710" w:type="dxa"/><w:vMerge w:val="restart"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t xml:space="preserve">Notice Period: </w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3199" w:type="dxa"/><w:vMerge w:val="restart"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>\xa0</w:t></w:r></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="2520" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>Other:</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3420" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="1710" w:type="dxa"/><w:vMerge/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3199" w:type="dxa"/><w:vMerge/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="2520" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="nil"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t xml:space="preserve">Package Expectations: </w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3420" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>\xa0</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="1710" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="single" w:sz="4" w:space="0" w:color="FFFFFF"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t xml:space="preserve">Key Qualifications : </w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="3199" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>\xa0</w:t></w:r></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge w:val="restart"/><w:tcBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>Reasons for candidate\'s suitability:</w:t></w:r></w:p><w:p><w:pPr><w:pStyle w:val="ListParagraph"/><w:widowControl/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="5"/></w:numPr><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge/><w:tcBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge/><w:tcBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge/><w:tcBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge/><w:tcBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge w:val="restart"/><w:tcBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>Key considerations:</w:t></w:r></w:p><w:p><w:pPr><w:pStyle w:val="ListParagraph"/><w:widowControl/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="5"/></w:numPr><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge/><w:tcBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge/><w:tcBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge/><w:tcBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge/><w:tcBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge/><w:tcBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge w:val="restart"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:noWrap/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr><w:t>Reasons for leaving / aspirations:</w:t></w:r></w:p><w:p><w:pPr><w:pStyle w:val="ListParagraph"/><w:widowControl/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="5"/></w:numPr><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr><w:tr><w:trPr><w:trHeight w:val="504"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="10849" w:type="dxa"/><w:gridSpan w:val="4"/><w:vMerge/><w:tcBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tcBorders><w:vAlign w:val="center"/><w:hideMark/></w:tcPr><w:p><w:pPr><w:widowControl/><w:autoSpaceDE/><w:autoSpaceDN/><w:rPr><w:rFonts w:ascii="Arial" w:eastAsia="Times New Roman" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:bCs/><w:color w:val="000000"/><w:lang w:val="en-IN" w:eastAsia="en-IN"/></w:rPr></w:pPr></w:p></w:tc></w:tr></w:tbl>';
+  const tbl = tblTemplate
+    .replace('{{NAME}}', esc(d.name || ''))
+    .replace('{{LOCATION}}', esc(d.location || ''));
+
+  body += tbl;
+
+  // ── PROFILE ──
+  body += sectionHeader('PROFILE');
+  body += plainPara(d.profile_summary || '', {before: 200});
+
+  // ── CAREER HISTORY ──
+  body += sectionHeader('CAREER HISTORY');
+  (d.career_history || []).forEach((job, idx) => {
+    body += careerPara(job, idx === 0 ? 200 : 240);
+    (job.bullets || []).forEach(b => { body += bullet(b, BID); });
+  });
+
+  // ── EDUCATION ──
+  body += sectionHeader('EDUCATION');
+  (d.education || []).forEach((e) => {
+    body += boldPara(e.degree || '', {before: 0, tabs: true});
+    if (e.institution) body += plainPara(e.institution);
+    (e.details || []).forEach(det => { body += bullet(det, BID); });
+  });
+
+  // ── SKILLS ──
+  if (d.skills && d.skills.length) {
+    body += sectionHeader('SKILLS');
+    (d.skills || []).forEach((cat) => {
+      body += boldPara(cat.category || '', {tabs: true});
+      (cat.items || []).forEach(item => { body += bullet(item, BID); });
+    });
+  }
+
+  // ── LANGUAGES ──
+  if (d.languages && d.languages.length) {
+    body += sectionHeader('LANGUAGES');
+    (d.languages || []).forEach(l => {
+      const txt = l.language + (l.level ? ` — ${l.level}` : '');
+      body += bullet(txt, BID);
+    });
+  }
+
+  // ── INTERESTS ──
+  if (d.interests && d.interests.length) {
+    body += sectionHeader('INTERESTS');
+    (d.interests || []).forEach(i => { body += bullet(i, BID); });
+  }
+
+  return body;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  TEMPLATE INJECTION
+//
+//  Strategy:
+//  1. Load the template ZIP (already parsed into templateParts)
+//  2. Replace ONLY word/document.xml body content
+//  3. Keep ALL other files exactly as they are:
+//     - word/header1.xml, word/header2.xml, etc.
+//     - word/footer1.xml, word/footer2.xml, etc.
+//     - word/styles.xml
+//     - word/settings.xml
+//     - word/_rels/document.xml.rels  ← critical: keeps header/footer refs
+//     - [Content_Types].xml
+//     - word/theme/, word/media/, etc.
+// ══════════════════════════════════════════════════════════════════
+async function injectBodyIntoTemplate(parts, bodyXml, data) {
+  if (!parts) throw new Error('Template parts not available');
+
+  const enc = new TextEncoder();
+
+  // Read the template's existing document.xml to extract its namespace declarations and sectPr
+  let existingDocXml = '';
+  if (parts.files['word/document.xml']) {
+    existingDocXml = new TextDecoder('utf-8').decode(parts.files['word/document.xml']);
+  }
+
+  // Extract sectPr (section properties = header/footer refs + page setup) from template
+  let sectPr = '';
+  const sectPrMatch = existingDocXml.match(/<w:sectPr[\s\S]*?<\/w:sectPr>/);
+  if (sectPrMatch) {
+    sectPr = sectPrMatch[0];
+  }
+
+  // Extract namespace declarations from template document
+  let nsDecls = `xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 wp14"`;
+  const nsMatch = existingDocXml.match(/<w:document([^>]*)>/);
+  if (nsMatch && nsMatch[1] && nsMatch[1].includes('xmlns')) {
+    nsDecls = nsMatch[1];
+  }
+
+  // Build new document.xml: template namespaces + new body content + template sectPr
+  const newDocXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${nsDecls}><w:body>${bodyXml}${sectPr}</w:body></w:document>`;
+
+  // Write output ZIP: every file from template, only document.xml replaced
+  const newZip = new JSZip();
+  for (const [path, bytes] of Object.entries(parts.files)) {
+    if (path === 'word/document.xml') {
+      newZip.file(path, enc.encode(newDocXml));
+    } else {
+      // Keep ALL template files exactly: headers, footers, numbering, styles, media, etc.
+      newZip.file(path, bytes);
+    }
+  }
+
+  return newZip.generateAsync({
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 6 }
+  });
+}
+
+// ── Download ──
+document.getElementById('download-btn').addEventListener('click', () => {
+  if (!generatedBlob || !extractedData) return;
+  const name = (extractedData.name || 'candidate').replace(/\s+/g, '_');
+  const url = URL.createObjectURL(generatedBlob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name + '_Formatted.docx';
+  a.click(); URL.revokeObjectURL(url);
+});
+</script>
+</body>
+</html>
