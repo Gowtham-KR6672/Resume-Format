@@ -486,7 +486,7 @@
 
     <div class="sidebar-footer">
       Powered by Claude API<br>
-      claude-sonnet-4-6 · Browser-native
+      claude-opus-4-8 · Browser-native
     </div>
   </aside>
 
@@ -575,7 +575,7 @@
         <div class="progress-panel-title">// Processing log</div>
         <div class="log-lines" id="log-lines">
           <div class="log-line" id="log-1"><div class="log-dot"></div><span>Reading PDF text content</span></div>
-          <div class="log-line" id="log-2"><div class="log-dot"></div><span>Sending to Claude claude-sonnet-4-6 for extraction</span></div>
+          <div class="log-line" id="log-2"><div class="log-dot"></div><span>Sending to Claude claude-opus-4-8 for extraction</span></div>
           <div class="log-line" id="log-3"><div class="log-dot"></div><span>Parsing structured JSON response</span></div>
           <div class="log-line" id="log-4"><div class="log-dot"></div><span>Unpacking DOCX template</span></div>
           <div class="log-line" id="log-5"><div class="log-dot"></div><span>Replacing header placeholders</span></div>
@@ -842,9 +842,8 @@ async function callClaude(resumeInput) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-opus-4-8',
       max_tokens: 4000,
-      temperature: 0,
       messages: [{ role: 'user', content: messageContent }]
     })
   });
