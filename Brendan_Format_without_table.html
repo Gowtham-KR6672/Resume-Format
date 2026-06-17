@@ -638,7 +638,7 @@
 
 <script>
 // ── STATE ──────────────────────────────────────────────────────────────
-const DEFAULT_API_KEY = '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';
+const DEFAULT_API_KEY = 'vercel-env-managed';
 
 const state = {
   apiKey: DEFAULT_API_KEY,
@@ -661,8 +661,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 function goToStep(n) {
   if (n === 2) {
     const key = document.getElementById('api-key-input').value.trim();
-    if (!key.startsWith('sk-')) {
-      showErr(1, 'Please enter a valid Anthropic API key (starts with sk-).');
+    if (!key) {
+      showErr(1, 'Server API key is not configured.');
       return;
     }
     state.apiKey = key;
@@ -835,13 +835,11 @@ async function callClaude(resumeInput) {
     messageContent = rules + '\n\nResume Text:\n' + resumeInput.content;
   }
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch('/api/claude', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': state.apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',

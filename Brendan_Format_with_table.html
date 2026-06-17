@@ -527,16 +527,16 @@ function resetApp() {
 }
 
 // ── Step 1 ──
-const DEFAULT_API_KEY = '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';
+const DEFAULT_API_KEY = 'vercel-env-managed';
 const apiInput = document.getElementById('api-key');
 const btn1 = document.getElementById('btn-1');
 const toggleVis = document.getElementById('toggle-vis');
 if (DEFAULT_API_KEY) {
   apiInput.value = DEFAULT_API_KEY;
-  btn1.disabled = !apiInput.value.trim().startsWith('sk-');
+  btn1.disabled = !apiInput.value.trim();
 }
 if (toggleVis) toggleVis.style.display = 'none';
-apiInput.addEventListener('input', () => { btn1.disabled = !apiInput.value.trim().startsWith('sk-'); });
+apiInput.addEventListener('input', () => { btn1.disabled = !apiInput.value.trim(); });
 toggleVis.addEventListener('click', () => {
   apiInput.type = apiInput.type === 'password' ? 'text' : 'password';
 });
@@ -657,13 +657,11 @@ async function extractPdfText(file) {
 }
 
 async function callClaude(system, user, maxTokens = 4000) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/claude', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiInput.value.trim(),
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-5',

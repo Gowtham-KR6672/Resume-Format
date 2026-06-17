@@ -220,7 +220,7 @@
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
 let state = {
-  apiKey: localStorage.getItem('genie_api_key') || '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',
+  apiKey: localStorage.getItem('genie_api_key') || 'vercel-env-managed',
   pdfFile: null,
   docxFile: null,
   outputBlob: null,
@@ -242,8 +242,8 @@ let state = {
 // ── API Key ────────────────────────────────────────────────────────────────
 function saveKey() {
   const val = document.getElementById('api-key-input').value.trim();
-  if (!val.startsWith('sk-ant-')) {
-    showKeyStatus('error', 'Key should start with sk-ant-…');
+  if (!val) {
+    showKeyStatus('error', 'Server API key is not configured.');
     return;
   }
   state.apiKey = val;
@@ -470,13 +470,11 @@ Return exactly this JSON shape:
 }
 Return ONLY valid JSON. No markdown code blocks.`;
 
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetch('/api/claude', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': state.apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
