@@ -494,8 +494,11 @@ Return ONLY valid JSON. No markdown code blocks.`;
   });
 
   if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(`Claude API error ${resp.status}: ${err.error?.message || resp.statusText}`);
+    const rawError = await resp.text().catch(() => '');
+    let err = {};
+    try { err = rawError ? JSON.parse(rawError) : {}; } catch { err = {}; }
+    const message = err.error?.message || rawError || resp.statusText || 'No error body returned';
+    throw new Error(`Claude API error ${resp.status}: ${message}`);
   }
 
   const data = await resp.json();
