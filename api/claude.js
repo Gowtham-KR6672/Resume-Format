@@ -1,12 +1,21 @@
 const ANTHROPIC_MESSAGES_URL = 'https://api.anthropic.com/v1/messages';
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: { message: 'Method not allowed' } });
+  const rawApiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+  const apiKey = normalizeApiKey(rawApiKey);
+  const keyStatus = getKeyStatus(rawApiKey, apiKey);
+
+  if (req.method === 'GET') {
+    return res.status(200).json({
+      ok: keyStatus.hasKey && keyStatus.hasAnthropicPrefix,
+      keyStatus
+    });
   }
 
-  const apiKey = normalizeApiKey(process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY);
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'GET, POST');
+    return res.status(405).json({ error: { message: 'Method not allowed' } });
+  }
 
   if (!apiKey) {
     return res.status(500).json({
@@ -19,7 +28,8 @@ module.exports = async function handler(req, res) {
   if (!apiKey.startsWith('sk-ant-api')) {
     return res.status(500).json({
       error: {
-        message: 'ANTHROPIC_API_KEY is set, but it does not look like a valid Anthropic API key. In Vercel, set only the key value, not "ANTHROPIC_API_KEY=...".'
+        message: 'ANTHROPIC_API_KEY is set, but it does not look like a valid Anthropic API key. In Vercel, set only the key value, not "ANTHROPIC_API_KEY=...".',
+        keyStatus
       }
     });
   }
@@ -45,6 +55,18 @@ module.exports = async function handler(req, res) {
     const text = await response.text();
     res.status(response.status);
     res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json');
+
+    if (response.status === 401) {
+      return res.json({
+        error: {
+          message: 'Anthropic rejected the server API key. Replace ANTHROPIC_API_KEY in Vercel with a fresh active key, then redeploy.',
+          upstreamStatus: response.status,
+          upstreamBody: parseJsonSafely(text),
+          keyStatus
+        }
+      });
+    }
+
     return res.send(text);
   } catch (error) {
     return res.status(502).json({
@@ -67,4 +89,22 @@ function normalizeApiKey(value) {
   }
 
   return key;
+}
+
+function getKeyStatus(rawValue, normalizedValue) {
+  return {
+    hasKey: Boolean(normalizedValue),
+    source: process.env.ANTHROPIC_API_KEY ? 'ANTHROPIC_API_KEY' : (process.env.CLAUDE_API_KEY ? 'CLAUDE_API_KEY' : 'none'),
+    rawHadEquals: typeof rawValue === 'string' && rawValue.includes('='),
+    normalizedLength: normalizedValue.length,
+    hasAnthropicPrefix: normalizedValue.startsWith('sk-ant-api')
+  };
+}
+
+function parseJsonSafely(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }

@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "dev": "node local-server.js",
+    "vercel-dev": "vercel dev --listen 3000"
+  }
+}
