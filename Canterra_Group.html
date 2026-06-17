@@ -412,7 +412,7 @@ Rules:
   if(isPDF && resumeText.length < 500) headers['anthropic-beta'] = 'pdfs-2024-09-25';
 
   const body = {
-    model: 'claude-sonnet-4-5',
+    model: 'claude-opus-4-8',
     max_tokens: 8000,
     system: systemPrompt,
     messages:[{ role:'user', content: userContent }]
