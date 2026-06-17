@@ -6,12 +6,20 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: { message: 'Method not allowed' } });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+  const apiKey = normalizeApiKey(process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY);
 
   if (!apiKey) {
     return res.status(500).json({
       error: {
         message: 'Missing ANTHROPIC_API_KEY. Add it to .env locally and to Vercel Environment Variables.'
+      }
+    });
+  }
+
+  if (!apiKey.startsWith('sk-ant-api')) {
+    return res.status(500).json({
+      error: {
+        message: 'ANTHROPIC_API_KEY is set, but it does not look like a valid Anthropic API key. In Vercel, set only the key value, not "ANTHROPIC_API_KEY=...".'
       }
     });
   }
@@ -46,3 +54,17 @@ module.exports = async function handler(req, res) {
     });
   }
 };
+
+function normalizeApiKey(value) {
+  if (!value) return '';
+
+  let key = String(value).trim();
+  key = key.replace(/^['"]|['"]$/g, '').trim();
+
+  if (key.includes('=') && key.split('=')[0].trim() === 'ANTHROPIC_API_KEY') {
+    key = key.slice(key.indexOf('=') + 1).trim();
+    key = key.replace(/^['"]|['"]$/g, '').trim();
+  }
+
+  return key;
+}
